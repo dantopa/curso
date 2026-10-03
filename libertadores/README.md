@@ -6,8 +6,10 @@ Juego de pelea 2D cinematográfico para navegador (escritorio y móvil). Una his
 libertadores, estrategas y guerreros indígenas de Latinoamérica son convocados a un torneo en una dimensión
 misteriosa. Los personajes se inspiran en figuras históricas; **los poderes, combates, diálogos y eventos son ficticios**.
 
-Todo es original y procedural: arte (animación esquelética dibujada en código), escenarios, música y efectos de
-sonido (Web Audio API). No hay assets externos ni imágenes con copyright.
+Arte de combate, escenarios, música y efectos son originales y procedurales (animación esquelética dibujada en código,
+Web Audio API). Los **retratos pintados** de la selección de personaje (`public/assets/portraits/<id>.jpg`) provienen del
+mockup provisto por el autor del proyecto; son opcionales: si falta un archivo se usa el retrato procedural. Se pueden
+reemplazar por arte propio sin tocar código (mismo nombre de archivo, ~120×200 px o mayor).
 
 ## Requisitos y comandos
 

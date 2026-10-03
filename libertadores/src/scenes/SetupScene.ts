@@ -5,7 +5,7 @@ import { STAGES } from '../data/stages';
 import { StageRenderer } from '../ui/stageRenderer';
 import { DIFFICULTY_LABEL } from '../ai/ai';
 import { getSettings, saveSettings } from '../systems/storage';
-import { COLORS, CSS, MenuBackdrop, MenuList, fadeIn, fadeTo, onNav, panel, screenTitle, txt } from '../ui/theme';
+import { COLORS, CSS, MenuBackdrop, MenuList, fadeIn, fadeTo, onNav, panel, portraitImage, screenTitle, txt } from '../ui/theme';
 import { drawPortrait, drawPortraitBackdrop } from '../ui/fighterRenderer';
 import type { FightConfig, Mode } from '../game/flow';
 
@@ -29,11 +29,13 @@ export class SetupScene extends Phaser.Scene {
     const g = this.add.graphics();
     // fighters header
     for (const [c, x, tag] of [[a, 220, this.d.mode === 'versus' ? 'JUGADOR 1' : 'VOS'], [b, 1060, this.d.mode === 'versus' ? 'JUGADOR 2' : 'CPU']] as const) {
-      drawPortraitBackdrop(g, c, x - 80, 140, 160, 160);
-      drawPortrait(g, c, x, 225, 150);
-      g.lineStyle(2, COLORS.gold, 1); g.strokeRect(x - 80, 140, 160, 160);
-      txt(this, x, 318, c.name, 22, CSS.goldLight, { title: true, origin: [0.5, 0.5] });
-      txt(this, x, 344, tag, 16, CSS.dim, { origin: [0.5, 0.5] });
+      if (!portraitImage(this, c.id, x - 54, 124, 108, 200, 5)) {
+        drawPortraitBackdrop(g, c, x - 80, 140, 160, 160);
+        drawPortrait(g, c, x, 225, 150);
+      }
+      g.lineStyle(2, COLORS.gold, 1); g.strokeRect(x - 54, 124, 108, 200);
+      txt(this, x, 340, c.name, 22, CSS.goldLight, { title: true, origin: [0.5, 0.5] });
+      txt(this, x, 364, tag, 16, CSS.dim, { origin: [0.5, 0.5] });
     }
     txt(this, GAME_W / 2, 218, 'VS', 60, CSS.gold, { title: true, origin: [0.5, 0.5], shadow: true });
     // stage thumbnail

@@ -2,10 +2,17 @@ import Phaser from 'phaser';
 import { GAME_H, GAME_W } from '../combat/types';
 import { AudioManager } from '../audio/AudioManager';
 import { CSS, MenuBackdrop, fadeIn, txt } from '../ui/theme';
+import { CHARACTER_IDS } from '../characters';
 
 export class BootScene extends Phaser.Scene {
   private bd!: MenuBackdrop;
   constructor() { super('Boot'); }
+  preload(): void {
+    // Optional painted portraits: if a file is missing the procedural portrait is used instead.
+    this.load.setPath('assets/portraits/');
+    for (const id of CHARACTER_IDS) this.load.image(`portrait_${id}`, `${id}.jpg`);
+    this.load.on('loaderror', () => { /* missing portrait → procedural fallback */ });
+  }
   create(): void {
     fadeIn(this, 600);
     this.bd = new MenuBackdrop(this);

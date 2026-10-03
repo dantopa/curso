@@ -81,10 +81,11 @@ export class FightScene extends Phaser.Scene {
     if (!cfg.p1Human) this.ai[0] = new AIController(0, cfg.difficulty, 11);
     if (!cfg.p2Human) this.ai[1] = new AIController(1, cfg.difficulty, 23);
     input.reset();
+    input.capture = true;
     const s = getSettings();
     const showTouch = s.touch === 'on' || (s.touch === 'auto' && isTouchDevice());
     touch.show(showTouch);
-    this.events.once('shutdown', () => { touch.show(false); this.stage.destroy(); AudioManager.get().stopMusic(0.4); });
+    this.events.once('shutdown', () => { input.capture = false; touch.show(false); this.stage.destroy(); AudioManager.get().stopMusic(0.4); });
     const tracks: MusicTrack[] = ['fight1', 'fight2', 'fight3'];
     AudioManager.get().playMusic(tracks[Math.floor(Math.random() * 3)]);
     this.input.keyboard?.on('keydown', (e: KeyboardEvent) => this.onKey(e));

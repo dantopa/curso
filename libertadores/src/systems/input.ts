@@ -4,12 +4,14 @@ import { P2_ALIASES, getSettings, type KeyMap } from './storage';
 /** Keyboard + gamepad + touch input for two local players. Edge detection happens in sample(). */
 export class InputSystem {
   private keys = new Set<string>();
+  /** Only swallow keys (preventDefault) during a fight; menus rely on Phaser seeing the raw events. */
+  capture = false;
   private prev: [Buttons, Buttons] = [emptyButtons(), emptyButtons()];
   /** Touch overlay writes here (player 1). */
   readonly virtual: Buttons = emptyButtons();
   private onDown = (e: KeyboardEvent) => {
     this.keys.add(e.code);
-    if (this.isMapped(e.code)) e.preventDefault();
+    if (this.capture && this.isMapped(e.code)) e.preventDefault();
   };
   private onUp = (e: KeyboardEvent) => { this.keys.delete(e.code); };
   private onBlur = () => { this.keys.clear(); };

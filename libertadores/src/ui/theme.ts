@@ -217,3 +217,25 @@ export function fadeTo(scene: Phaser.Scene, key: string, data?: object, ms = 280
   scene.cameras.main.once('camerafadeoutcomplete', () => scene.scene.start(key, data));
 }
 export function fadeIn(scene: Phaser.Scene, ms = 280): void { scene.cameras.main.fadeIn(ms, 0, 0, 0); }
+
+/** Adds the painted portrait (public/assets/portraits/<id>.jpg) if it was loaded; returns null otherwise. */
+export function portraitImage(scene: Phaser.Scene, id: string, x: number, y: number, w: number, h: number, depth = 5): Phaser.GameObjects.Image | null {
+  const key = `portrait_${id}`;
+  if (!scene.textures.exists(key)) return null;
+  return scene.add.image(x, y, key).setOrigin(0).setDisplaySize(w, h).setDepth(depth);
+}
+
+/** Gold sun emblem with rays (original; used beside the logo). */
+export function drawSunEmblem(g: Phaser.GameObjects.Graphics, x: number, y: number, r: number): void {
+  g.fillStyle(0x000000, 0.55); g.fillCircle(x, y, r);
+  g.lineStyle(3, COLORS.gold, 1); g.strokeCircle(x, y, r);
+  g.lineStyle(1, COLORS.goldDark, 1); g.strokeCircle(x, y, r - 5);
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI * 2, long = i % 2 === 0;
+    g.lineStyle(long ? 3 : 2, COLORS.gold, 1);
+    g.lineBetween(x + Math.cos(a) * r * 0.42, y + Math.sin(a) * r * 0.42, x + Math.cos(a) * r * (long ? 0.85 : 0.7), y + Math.sin(a) * r * (long ? 0.85 : 0.7));
+  }
+  g.fillStyle(COLORS.goldLight, 1); g.fillCircle(x, y, r * 0.3);
+  g.fillStyle(0x000000, 0.35); g.fillCircle(x - r * 0.08, y - r * 0.04, r * 0.06); g.fillCircle(x + r * 0.08, y - r * 0.04, r * 0.06);
+  g.lineStyle(2, 0x000000, 0.35); g.beginPath(); g.arc(x, y + r * 0.02, r * 0.12, 0.2, Math.PI - 0.2); g.strokePath();
+}
