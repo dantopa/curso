@@ -21,7 +21,7 @@ OUT_ROOT = Path("/home/user/artwork")
 CW, CH = 768, 1024
 FIG_H = 980
 
-STYLE = ("full body, head to boots, standing in a fighting stance, body turned to the right, "
+STYLE = ("full length wide shot with empty margin around, full body, head to boots, standing in a fighting stance, body turned to the right, "
          "side profile view facing right, plain flat light grey background, "
          "dark cinematic painted illustration, realistic historical oil painting, dramatic rim lighting, "
          "moody, highly detailed costume")
@@ -30,8 +30,13 @@ NEGATIVE = ("cropped, close-up, portrait, headshot, cut off feet, cut off head, 
             "deformed hands, blurry, low quality, cartoon, anime, horse, scenery, landscape, backdrop")
 
 
+PREFIX = ("dark cinematic oil painting, full body, facing right in profile, fighting stance, "
+          "whole figure visible head to boots, plain grey background")
+
+
 def build_prompt(c):
-    return f"side view full body painting of {c['desc']}, {STYLE}"
+    # CLIP reads only ~77 tokens: style, framing and facing go FIRST so they are never truncated.
+    return f"{PREFIX}: {c['desc']}"
 
 
 def load_pipe(model, dtype="bf16"):
@@ -75,9 +80,10 @@ def clean_alpha(rgba):
                             lab[ny, nx] = cur; q.append((ny, nx))
                 if n > best_n: best, best_n = cur, n
     keep = lab == best
-    # allow components that are big (e.g. a separate weapon) to survive
+    # keep detached parts (e.g. a sabre tip) only if they lie within ~30px of the main body
+    near = np.array(Image.fromarray((lab == best).astype(np.uint8) * 255).filter(ImageFilter.MaxFilter(61))) > 0
     for i in range(1, cur + 1):
-        if i != best and (lab == i).sum() > 0.04 * best_n:
+        if i != best and (lab == i).sum() > 40 and ((lab == i) & near).any():
             keep |= lab == i
     a2 = np.where(keep, a, 0).astype(np.uint8)
     al = Image.fromarray(a2).filter(ImageFilter.MinFilter(3)).filter(ImageFilter.GaussianBlur(0.8))
@@ -146,18 +152,22 @@ def main():
         prompt = build_prompt(spec[cid])
         print(f"[{cid}] {prompt}", flush=True)
         paths = []
-        for k in range(a.n):
-            seed = a.seed0 + k
+        seed, made, tries = a.seed0, 0, 0
+        while made < a.n and tries < a.n * 6:
+            tries += 1
             g = torch.Generator("cpu").manual_seed(seed)
             t1 = time.time()
             img = pipe(prompt=prompt, negative_prompt=neg, num_inference_steps=a.steps,
                        guidance_scale=a.guidance, width=a.width, height=a.height, generator=g).images[0]
             t2 = time.time()
-            img.save(d / f"raw_{seed}.png")
             cut = clean_alpha(matter(img.convert("RGB")).convert("RGBA"))
-            out = place_on_canvas(cut)
-            p = d / f"cand_{seed}.png"; out.save(p); paths.append(p)
-            print(f"  seed {seed}: gen {t2-t1:.1f}s  matte {time.time()-t2:.1f}s", flush=True)
+            bb = cut.getchannel("A").point(lambda v: 255 if v > 128 else 0).getbbox()
+            cropped = (not bb) or bb[1] <= 1 or bb[3] >= a.height - 1
+            print(f"  seed {seed}: gen {t2-t1:.1f}s  matte {time.time()-t2:.1f}s" + ("  REJECTED (touches top/bottom edge = cropped)" if cropped else ""), flush=True)
+            if not cropped:
+                img.save(d / f"raw_{seed}.png")
+                p = d / f"cand_{seed}.png"; place_on_canvas(cut).save(p); paths.append(p); made += 1
+            seed += 1
         contact_sheet(paths, d / "sheet.png")
         print(f"  -> {d/'sheet.png'}", flush=True)
 

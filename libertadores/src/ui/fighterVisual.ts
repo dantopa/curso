@@ -135,7 +135,7 @@ function puppetFor(f: FighterView, want: AnimName): PuppetPose {
     }
     case 'knockdown': case 'dead': {
       const a = easeOut(clamp(af / 11, 0, 1));
-      p.rootRot = -1.5 * a; p.pivotH = 0.4; p.lift = 0.4 * 196 * f.char.art.height * (1 - a) + 20 * a;
+      p.rootRot = -1.5 * a; p.pivotH = 0.4; p.lift = 0.4 * 224 * f.char.art.height * (1 - a) + 20 * a;
       p.upRot = 0.08 * a; p.headRot = -0.2 * a; p.legSkew = 0.1 * a;
       break;
     }
@@ -214,7 +214,7 @@ export class FighterVisual {
     const wantPose = poseFor(want);
     const pose = this.resolve(wantPose);
     const idleTex = this.scene.textures.get(texKey(this.char.id, 'idle')).getSourceImage();
-    const base = (196 * this.char.art.height * (o.scale ?? 1)) / (idleTex.height || 1);
+    const base = (224 * this.char.art.height * (o.scale ?? 1)) / (idleTex.height || 1);
     const t = f.clock, face = f.facing, phase = f.phase, pt = f.phaseT;
     const ox = o.xOffset ?? 0, oy = o.yOffset ?? 0;
     const alpha = (o.alpha ?? 1) * (want === 'evade' ? 0.4 : 1);
