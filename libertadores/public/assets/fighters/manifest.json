@@ -50,9 +50,32 @@
  "ohiggins": [
   "idle"
  ],
- "sanmartin": [
-  "idle"
- ],
+ "sanmartin": {
+  "poses": [
+   "idle"
+  ],
+  "anims": [
+   "idle",
+   "walk_fwd",
+   "walk_back",
+   "crouch",
+   "crouch_block",
+   "block",
+   "jump",
+   "light",
+   "heavy",
+   "crouch_heavy",
+   "special_cast",
+   "rush",
+   "counter",
+   "hit_high",
+   "knockdown",
+   "getup",
+   "dazed",
+   "dead",
+   "win"
+  ]
+ },
  "sucre": [
   "idle"
  ],
