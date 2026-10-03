@@ -1,104 +1,265 @@
 {
-  "_comment": "desc = short visual description (CLIP only reads ~77 tokens, keep it tight). art = fields copied from src/characters/roster*.ts.",
-  "bolivar": {
-    "name": "Simón Bolívar", "title": "El Libertador",
-    "art": {"headgear": "none", "hair": "short", "facial": "sideburns", "cape": "cape", "weapon": "sabre", "build": "normal"},
-    "desc": "Simon Bolivar, 19th century South American general, dark curly hair, sideburns, navy blue tailcoat with heavy gold embroidery and gold epaulettes, red sash, white trousers, black boots, holding a curved sabre"
+ "_comment": "desc = short visual description (CLIP only reads ~77 tokens, keep it tight). art = fields copied from src/characters/roster*.ts.",
+ "bolivar": {
+  "name": "Simón Bolívar",
+  "title": "El Libertador",
+  "art": {
+   "headgear": "none",
+   "hair": "short",
+   "facial": "sideburns",
+   "cape": "cape",
+   "weapon": "sabre",
+   "build": "normal"
   },
-  "sanmartin": {
-    "name": "José de San Martín", "title": "El Padre de la Patria",
-    "art": {"headgear": "bicorne", "hair": "short", "facial": "sideburns", "cape": "cape", "weapon": "curvedSabre", "build": "normal"},
-    "desc": "Jose de San Martin, Argentine general, dark wavy hair, thick sideburns, black bicorne hat, dark blue military coat with gold embroidery and large gold epaulettes, short cape, white trousers, black boots, curved sabre"
+  "desc": "Simon Bolivar, 19th century South American general, dark curly hair, sideburns, navy blue tailcoat with heavy gold embroidery and gold epaulettes, red sash, white trousers, black boots, holding a curved sabre"
+ },
+ "sanmartin": {
+  "name": "José de San Martín",
+  "title": "El Padre de la Patria",
+  "art": {
+   "headgear": "bicorne",
+   "hair": "short",
+   "facial": "sideburns",
+   "cape": "cape",
+   "weapon": "curvedSabre",
+   "build": "normal"
   },
-  "tupacamaru": {
-    "name": "Túpac Amaru II", "title": "El Inca Rebelde",
-    "art": {"headgear": "llautu", "hair": "long", "facial": "none", "cape": "unku", "weapon": "ceremonial", "build": "heavy"},
-    "desc": "Tupac Amaru II, powerful Andean Inca nobleman, long black hair with woven llautu headband, red and gold patterned unku tunic, striped red and blue poncho, gold jewelry, ceremonial staff, muscular heavy build, sandals"
+  "desc": "Jose de San Martin, Argentine general, dark wavy hair, thick sideburns, black bicorne hat, dark blue military coat with gold embroidery and large gold epaulettes, short cape, white trousers, black boots, curved sabre"
+ },
+ "tupacamaru": {
+  "name": "Túpac Amaru II",
+  "title": "El Inca Rebelde",
+  "art": {
+   "headgear": "llautu",
+   "hair": "long",
+   "facial": "none",
+   "cape": "unku",
+   "weapon": "ceremonial",
+   "build": "heavy"
   },
-  "sucre": {
-    "name": "Antonio José de Sucre", "title": "El Gran Mariscal",
-    "art": {"headgear": "bicorne", "hair": "short", "facial": "sideburns", "cape": "sash", "weapon": "sword", "build": "slim"},
-    "desc": "Antonio Jose de Sucre, slim young Venezuelan marshal, short dark hair, sideburns, bicorne hat, dark green military coat with gold buttons and epaulettes, gold sash, cream trousers, black boots, straight sword"
+  "desc": "Tupac Amaru II, powerful Andean Inca nobleman, long black hair with woven llautu headband, red and gold patterned unku tunic, striped red and blue poncho, gold jewelry, ceremonial staff, muscular heavy build, sandals"
+ },
+ "sucre": {
+  "name": "Antonio José de Sucre",
+  "title": "El Gran Mariscal",
+  "art": {
+   "headgear": "bicorne",
+   "hair": "short",
+   "facial": "sideburns",
+   "cape": "sash",
+   "weapon": "sword",
+   "build": "slim"
   },
-  "louverture": {
-    "name": "Toussaint Louverture", "title": "El Espartaco Negro",
-    "art": {"headgear": "bandana", "hair": "curly", "facial": "none", "cape": "sash", "weapon": "sword", "build": "normal"},
-    "desc": "Toussaint Louverture, Haitian revolutionary general, dark brown skin, black bicorne hat with white feather, navy blue coat with gold leaf embroidery, red collar, white cravat, red sash, gold epaulettes, black boots, straight sword"
+  "desc": "Antonio Jose de Sucre, slim young Venezuelan marshal, short dark hair, sideburns, bicorne hat, dark green military coat with gold buttons and epaulettes, gold sash, cream trousers, black boots, straight sword"
+ },
+ "louverture": {
+  "name": "Toussaint Louverture",
+  "title": "El Espartaco Negro",
+  "art": {
+   "headgear": "bandana",
+   "hair": "curly",
+   "facial": "none",
+   "cape": "sash",
+   "weapon": "sword",
+   "build": "normal"
   },
-  "hidalgo": {
-    "name": "Miguel Hidalgo", "title": "El Padre de la Independencia Mexicana",
-    "art": {"headgear": "none", "hair": "short", "facial": "none", "cape": "cape", "weapon": "sword", "build": "normal"},
-    "desc": "Miguel Hidalgo, elderly Mexican priest, white hair bald on top, black clerical cassock with white collar, large gold cross necklace, dark cloak, shouting fiercely, holding a lit torch and a sword"
+  "desc": "Toussaint Louverture, Haitian revolutionary general, dark brown skin, black bicorne hat with white feather, navy blue coat with gold leaf embroidery, red collar, white cravat, red sash, gold epaulettes, black boots, straight sword"
+ },
+ "hidalgo": {
+  "name": "Miguel Hidalgo",
+  "title": "El Padre de la Independencia Mexicana",
+  "art": {
+   "headgear": "none",
+   "hair": "short",
+   "facial": "none",
+   "cape": "cape",
+   "weapon": "sword",
+   "build": "normal"
   },
-  "morelos": {
-    "name": "José María Morelos", "title": "El Siervo de la Nación",
-    "art": {"headgear": "turban", "hair": "short", "facial": "none", "cape": "sash", "weapon": "sword", "build": "heavy"},
-    "desc": "Jose Maria Morelos, stocky Mexican insurgent priest-general, white cloth turban on head, white shirt, dark olive coat, crossed leather bandolier, red sash, gold epaulettes, heavy muscular build, sword"
+  "desc": "Miguel Hidalgo, elderly Mexican priest, white hair bald on top, black clerical cassock with white collar, large gold cross necklace, dark cloak, shouting fiercely, holding a lit torch and a sword"
+ },
+ "morelos": {
+  "name": "José María Morelos",
+  "title": "El Siervo de la Nación",
+  "art": {
+   "headgear": "turban",
+   "hair": "short",
+   "facial": "none",
+   "cape": "sash",
+   "weapon": "sword",
+   "build": "heavy"
   },
-  "ohiggins": {
-    "name": "Bernardo O'Higgins", "title": "El Libertador de Chile",
-    "art": {"headgear": "shako", "hair": "short", "facial": "sideburns", "cape": "cape", "weapon": "sabre", "build": "normal"},
-    "desc": "Bernardo O'Higgins, Chilean general, fair skin, brown hair, sideburns, tall black shako hat, dark blue coat with gold embroidered collar and large gold epaulettes, red white and blue sash, white trousers, black boots, sabre"
+  "desc": "Jose Maria Morelos, stocky Mexican insurgent priest-general, white cloth turban on head, white shirt, dark olive coat, crossed leather bandolier, red sash, gold epaulettes, heavy muscular build, sword"
+ },
+ "ohiggins": {
+  "name": "Bernardo O'Higgins",
+  "title": "El Libertador de Chile",
+  "art": {
+   "headgear": "shako",
+   "hair": "short",
+   "facial": "sideburns",
+   "cape": "cape",
+   "weapon": "sabre",
+   "build": "normal"
   },
-  "artigas": {
-    "name": "José Gervasio Artigas", "title": "El Protector de los Pueblos Libres",
-    "art": {"headgear": "tricorn", "hair": "long", "facial": "sideburns", "cape": "sash", "weapon": "facon", "build": "slim"},
-    "desc": "Jose Artigas, Uruguayan gaucho caudillo, dark hair, sideburns, black tricorn hat, patterned brown poncho over dark blue jacket, red neckerchief, baggy gaucho trousers, riding boots with spurs, short facon knife"
+  "desc": "Bernardo O'Higgins, Chilean general, fair skin, brown hair, sideburns, tall black shako hat, dark blue coat with gold embroidered collar and large gold epaulettes, red white and blue sash, white trousers, black boots, sabre"
+ },
+ "artigas": {
+  "name": "José Gervasio Artigas",
+  "title": "El Protector de los Pueblos Libres",
+  "art": {
+   "headgear": "tricorn",
+   "hair": "long",
+   "facial": "sideburns",
+   "cape": "sash",
+   "weapon": "facon",
+   "build": "slim"
   },
-  "miranda": {
-    "name": "Francisco de Miranda", "title": "El Precursor",
-    "art": {"headgear": "tricorn", "hair": "slicked", "facial": "none", "cape": "none", "weapon": "pistolSword", "build": "slim"},
-    "desc": "Francisco de Miranda, older Venezuelan general, long swept-back grey white hair, clean shaven, dark navy and tan military coat with gold trim, red waistcoat, tricorn hat, holding a flintlock pistol and a sword"
+  "desc": "standing on foot, no horse, Jose Artigas, Uruguayan gaucho caudillo, dark hair, sideburns, black tricorn hat, patterned brown poncho over dark blue jacket, red neckerchief, baggy gaucho trousers, riding boots with spurs, short facon knife"
+ },
+ "miranda": {
+  "name": "Francisco de Miranda",
+  "title": "El Precursor",
+  "art": {
+   "headgear": "tricorn",
+   "hair": "slicked",
+   "facial": "none",
+   "cape": "none",
+   "weapon": "pistolSword",
+   "build": "slim"
   },
-  "guemes": {
-    "name": "Martín Miguel de Güemes", "title": "El General Gaucho",
-    "art": {"headgear": "gauchoHat", "hair": "short", "facial": "moustache", "cape": "poncho", "weapon": "facon", "build": "slim"},
-    "desc": "Martin Miguel de Guemes, Argentine gaucho general, wide-brim black gaucho hat, black curly hair, full dark beard and moustache, flowing red poncho, white shirt, gaucho trousers, boots with spurs, long facon knife"
+  "desc": "Francisco de Miranda, older Venezuelan general, long swept-back grey white hair, clean shaven, dark navy and tan military coat with gold trim, red waistcoat, tricorn hat, holding a flintlock pistol and a sword"
+ },
+ "guemes": {
+  "name": "Martín Miguel de Güemes",
+  "title": "El General Gaucho",
+  "art": {
+   "headgear": "gauchoHat",
+   "hair": "short",
+   "facial": "moustache",
+   "cape": "poncho",
+   "weapon": "facon",
+   "build": "slim"
   },
-  "cordova": {
-    "name": "José María Córdova", "title": "El Héroe de Ayacucho",
-    "art": {"headgear": "shako", "hair": "short", "facial": "none", "cape": "none", "weapon": "sabre", "build": "slim"},
-    "desc": "Jose Maria Cordova, young Colombian general, dark hair, thick moustache, dark navy coat with gold embroidery and gold epaulettes, white trousers, black boots, slim athletic build, drawn sabre"
+  "desc": "Martin Miguel de Guemes, Argentine gaucho general, wide-brim black gaucho hat, black curly hair, full dark beard and moustache, flowing red poncho, white shirt, gaucho trousers, boots with spurs, long facon knife"
+ },
+ "cordova": {
+  "name": "José María Córdova",
+  "title": "El Héroe de Ayacucho",
+  "art": {
+   "headgear": "shako",
+   "hair": "short",
+   "facial": "none",
+   "cape": "none",
+   "weapon": "sabre",
+   "build": "slim"
   },
-  "juarez": {
-    "name": "Benito Juárez", "title": "El Benemérito",
-    "art": {"headgear": "none", "hair": "short", "facial": "none", "cape": "none", "weapon": "sword", "build": "normal"},
-    "desc": "Benito Juarez, short stocky Zapotec Mexican president, short black hair, stern face, black formal frock coat and waistcoat, white shirt, black bow tie, dark trousers, black shoes, holding a rolled constitution scroll"
+  "desc": "Jose Maria Cordova, young Colombian general, dark hair, thick moustache, dark navy coat with gold embroidery and gold epaulettes, white trousers, black boots, slim athletic build, drawn sabre"
+ },
+ "juarez": {
+  "name": "Benito Juárez",
+  "title": "El Benemérito",
+  "art": {
+   "headgear": "none",
+   "hair": "short",
+   "facial": "none",
+   "cape": "none",
+   "weapon": "sword",
+   "build": "normal"
   },
-  "guerrero": {
-    "name": "Vicente Guerrero", "title": "El Tigre del Sur",
-    "art": {"headgear": "headband", "hair": "curly", "facial": "moustache", "cape": "sash", "weapon": "sword", "build": "heavy"},
-    "desc": "Vicente Guerrero, strong dark-skinned Mexican insurgent general, big curly black afro hair, moustache, white shirt, dark waistcoat, red and white sash, gold epaulettes, heavy muscular build, sword"
+  "desc": "Benito Juarez, short stocky Zapotec Mexican president, short black hair, stern face, black formal frock coat and waistcoat, white shirt, black bow tie, dark trousers, black shoes, holding a rolled constitution scroll"
+ },
+ "guerrero": {
+  "name": "Vicente Guerrero",
+  "title": "El Tigre del Sur",
+  "art": {
+   "headgear": "headband",
+   "hair": "curly",
+   "facial": "moustache",
+   "cape": "sash",
+   "weapon": "sword",
+   "build": "heavy"
   },
-  "iturbide": {
-    "name": "Agustín de Iturbide", "title": "El Emperador",
-    "art": {"headgear": "crown", "hair": "short", "facial": "sideburns", "cape": "cape", "weapon": "sabre", "build": "normal"},
-    "desc": "Agustin de Iturbide, Mexican emperor, dark hair, sideburns, gold laurel crown, dark blue uniform heavy gold embroidery and epaulettes, green white and red tricolor sash, ermine trimmed imperial cape, sabre"
+  "desc": "Vicente Guerrero, strong dark-skinned Mexican insurgent general, big curly black afro hair, moustache, white shirt, dark waistcoat, red and white sash, gold epaulettes, heavy muscular build, sword"
+ },
+ "iturbide": {
+  "name": "Agustín de Iturbide",
+  "title": "El Emperador",
+  "art": {
+   "headgear": "crown",
+   "hair": "short",
+   "facial": "sideburns",
+   "cape": "cape",
+   "weapon": "sabre",
+   "build": "normal"
   },
-  "marti": {
-    "name": "José Martí", "title": "El Apóstol de Cuba",
-    "art": {"headgear": "none", "hair": "curly", "facial": "moustache", "cape": "none", "weapon": "pen", "build": "slim"},
-    "desc": "Jose Marti, slim Cuban poet, dark wavy hair, large moustache, black frock coat, white shirt, black tie, dark trousers, black shoes, holding a glowing quill pen"
+  "desc": "Agustin de Iturbide, Mexican emperor, dark hair, sideburns, gold laurel crown, dark blue uniform heavy gold embroidery and epaulettes, green white and red tricolor sash, ermine trimmed imperial cape, sabre"
+ },
+ "marti": {
+  "name": "José Martí",
+  "title": "El Apóstol de Cuba",
+  "art": {
+   "headgear": "none",
+   "hair": "curly",
+   "facial": "moustache",
+   "cape": "none",
+   "weapon": "pen",
+   "build": "slim"
   },
-  "micaela": {
-    "name": "Micaela Bastidas", "title": "La Estratega Rebelde",
-    "art": {"headgear": "headband", "hair": "braids", "facial": "none", "cape": "poncho", "weapon": "lasso", "build": "slim", "female": true},
-    "desc": "Micaela Bastidas, Andean indigenous woman warrior, long black braids, woven headband, gold earrings, red and gold embroidered tunic, purple and teal poncho, leather bracers, long skirt, boots, coiled whip",
-    "female": true
+  "desc": "Jose Marti, slim Cuban poet, dark wavy hair, large moustache, black frock coat, white shirt, black tie, dark trousers, black shoes, holding a glowing quill pen"
+ },
+ "micaela": {
+  "name": "Micaela Bastidas",
+  "title": "La Estratega Rebelde",
+  "art": {
+   "headgear": "headband",
+   "hair": "braids",
+   "facial": "none",
+   "cape": "poncho",
+   "weapon": "lasso",
+   "build": "slim",
+   "female": true
   },
-  "katari": {
-    "name": "Túpac Katari", "title": "El Cerco de La Paz",
-    "art": {"headgear": "feathers", "hair": "long", "facial": "none", "cape": "poncho", "weapon": "sling", "build": "heavy"},
-    "desc": "Tupac Katari, Aymara rebel leader, long black hair, red woven chullo cap with feathers, red and blue striped poncho, dark tunic, heavy muscular build, leather sling weapon, sandals"
+  "desc": "Micaela Bastidas, Andean indigenous woman warrior, long black braids, woven headband, gold earrings, red and gold embroidered tunic, purple and teal poncho, leather bracers, long skirt, boots, coiled whip",
+  "female": true
+ },
+ "katari": {
+  "name": "Túpac Katari",
+  "title": "El Cerco de La Paz",
+  "art": {
+   "headgear": "feathers",
+   "hair": "long",
+   "facial": "none",
+   "cape": "poncho",
+   "weapon": "sling",
+   "build": "heavy"
   },
-  "manco": {
-    "name": "Manco Inca", "title": "El Inca de Vilcabamba",
-    "art": {"headgear": "inkaCrown", "hair": "long", "facial": "none", "cape": "unku", "weapon": "spear", "build": "normal"},
-    "desc": "Manco Inca, Inca emperor warrior, tall red and orange feather headdress with gold sun disc, long black hair, gold embroidered tunic, golden breastplate, red cape, gold bracers, holding a long spear"
+  "desc": "Tupac Katari, Aymara rebel leader, long black hair, red woven chullo cap with feathers, red and blue striped poncho, dark tunic, heavy muscular build, leather sling weapon, sandals"
+ },
+ "manco": {
+  "name": "Manco Inca",
+  "title": "El Inca de Vilcabamba",
+  "art": {
+   "headgear": "inkaCrown",
+   "hair": "long",
+   "facial": "none",
+   "cape": "unku",
+   "weapon": "spear",
+   "build": "normal"
   },
-  "belgrano": {
-    "name": "Manuel Belgrano", "title": "El Creador de la Bandera",
-    "art": {"headgear": "bicorne", "hair": "short", "facial": "sideburns", "cape": "banner", "weapon": "sabre", "build": "normal"},
-    "desc": "Manuel Belgrano, Argentine general, curly dark hair, sideburns, black bicorne hat, dark navy military coat with gold buttons, white cravat, light blue and white sash, white trousers, black boots, sabre"
-  }
+  "desc": "Manco Inca, Inca emperor warrior, tall red and orange feather headdress with gold sun disc, long black hair, gold embroidered tunic, golden breastplate, red cape, gold bracers, holding a long spear"
+ },
+ "belgrano": {
+  "name": "Manuel Belgrano",
+  "title": "El Creador de la Bandera",
+  "art": {
+   "headgear": "bicorne",
+   "hair": "short",
+   "facial": "sideburns",
+   "cape": "banner",
+   "weapon": "sabre",
+   "build": "normal"
+  },
+  "desc": "Manuel Belgrano, Argentine general, curly dark hair, sideburns, black bicorne hat, dark navy military coat with gold buttons, white cravat, light blue and white sash, white trousers, black boots, sabre"
+ }
 }
