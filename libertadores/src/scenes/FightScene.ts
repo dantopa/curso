@@ -97,7 +97,11 @@ export class FightScene extends Phaser.Scene {
     const s = getSettings();
     const showTouch = s.touch === 'on' || (s.touch === 'auto' && isTouchDevice());
     touch.show(showTouch);
-    this.events.once('shutdown', () => { this.d25?.destroy(); this.cameras.main.setRotation(0).setZoom(1); input.capture = false; touch.show(false); this.stage.destroy(); AudioManager.get().stopMusic(0.4); });
+    this.events.once('shutdown', () => {
+      input.capture = false; touch.show(false); AudioManager.get().stopMusic(0.4);
+      try { this.d25?.destroy(); this.stage.destroy(); } catch { /* already torn down */ }
+      this.cameras?.main?.setRotation(0).setZoom(1); // the camera manager may already be gone at shutdown
+    });
     const tracks: MusicTrack[] = ['fight1', 'fight2', 'fight3'];
     AudioManager.get().playMusic(tracks[Math.floor(Math.random() * 3)]);
     this.input.keyboard?.on('keydown', (e: KeyboardEvent) => this.onKey(e));
