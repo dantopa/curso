@@ -30,7 +30,7 @@ export class TournamentScene extends Phaser.Scene {
   private init_!: { player?: string; resume?: boolean; result?: MatchResult };
   private pulseMatch: string | null = null;
   constructor() { super('Tournament'); }
-  init(d: { player?: string; resume?: boolean; result?: MatchResult }): void { this.init_ = d ?? {}; }
+  init(d: { player?: string; resume?: boolean; result?: MatchResult }): void { this.init_ = d ?? {}; this.busy = false; this.dyn = []; this.pulseMatch = null; }
 
   create(): void {
     fadeIn(this);

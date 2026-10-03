@@ -8,8 +8,8 @@ export const guemes = makeCharacter({
     headgear: 'gauchoHat', hair: 'short', facial: 'moustache', cape: 'poncho', weapon: 'facon', build: 'slim', height: 1.0,
     decor: ['spurs'],
   },
-  stats: { health: 940, walkSpeed: 5.0, backSpeed: 4.0, dashSpeed: 13, attack: 0.98, defense: 0.94, jumpVel: 18.3 },
-  normals: { lightStartup: 4, heavyStartup: 10, lightReach: 66, heavyReach: 82 },
+  stats: { health: 1020, walkSpeed: 5.0, backSpeed: 4.0, dashSpeed: 13, attack: 1.03, defense: 1.0, jumpVel: 18.3 },
+  normals: { lightStartup: 4, heavyStartup: 10, lightReach: 74, heavyReach: 92 },
   specials: [
     C('Facón Salteño', 'Cuchilladas rápidas.', 28, { hits: 4, interval: 6, step: 9, reach: 72, color: 0xff2a2a, launchFinisher: false }, { startup: 6, recovery: 24 }),
     R('Carga de Salta', 'Poderoso ataque montado.', 90,
@@ -31,7 +31,7 @@ export const cordova = makeCharacter({
     headgear: 'shako', hair: 'short', facial: 'none', cape: 'none', weapon: 'sabre', build: 'slim', height: 0.98,
     decor: ['epaulettes', 'sash'],
   },
-  stats: { health: 960, walkSpeed: 4.9, backSpeed: 3.8, dashSpeed: 12.5, attack: 1.0, defense: 0.96, jumpVel: 18.8 },
+  stats: { health: 990, walkSpeed: 4.9, backSpeed: 3.8, dashSpeed: 12.5, attack: 1.03, defense: 0.99, jumpVel: 18.8 },
   normals: { lightStartup: 4, lightDmg: 1.04 },
   specials: [
     P('Golpe de Chorros Blancos', 'Onda de choque que recorre el suelo.', 72,
@@ -53,7 +53,7 @@ export const juarez = makeCharacter({
     headgear: 'none', hair: 'short', facial: 'none', cape: 'none', weapon: 'sword', build: 'normal', height: 0.93,
     decor: ['medals'],
   },
-  stats: { health: 1040, defense: 1.1, attack: 0.94, walkSpeed: 3.9, meterGain: 1.1 },
+  stats: { health: 1010, defense: 1.02, attack: 0.94, walkSpeed: 3.9, meterGain: 1.1 },
   normals: { heavyReach: 98 },
   specials: [
     P('Águila de la República', 'Águila espectral que ataca en picada.', 78,
@@ -76,7 +76,7 @@ export const guerrero = makeCharacter({
     headgear: 'headband', hair: 'curly', facial: 'moustache', cape: 'sash', weapon: 'sword', build: 'heavy', height: 1.04,
     decor: ['warpaint'],
   },
-  stats: { health: 1120, walkSpeed: 3.8, backSpeed: 3.0, attack: 1.08, defense: 1.1, jumpVel: 16.8, meterGain: 0.95 },
+  stats: { health: 1050, walkSpeed: 3.8, backSpeed: 3.0, attack: 1.04, defense: 1.02, jumpVel: 16.8, meterGain: 0.95 },
   normals: { lightStartup: 6, heavyStartup: 12, heavyDmg: 1.12, lightReach: 70 },
   specials: [
     C('Zarpazo del Tigre', 'Devastador golpe de zarpa.', 58, { hits: 2, interval: 11, step: 14, reach: 85, color: 0xff8a1a }, { startup: 9 }),
@@ -120,7 +120,7 @@ export const marti = makeCharacter({
     headgear: 'none', hair: 'curly', facial: 'moustache', cape: 'none', weapon: 'pen', build: 'slim', height: 0.97,
     decor: ['scarf'],
   },
-  stats: { health: 940, walkSpeed: 4.3, attack: 0.96, defense: 0.94, meterGain: 1.15 },
+  stats: { health: 1010, walkSpeed: 4.3, attack: 1.0, defense: 0.98, meterGain: 1.15 },
   normals: { lightReach: 76, heavyReach: 94 },
   specials: [
     P('Versos de Fuego', 'Proyectiles de energía con forma de letras luminosas.', 70,
@@ -144,11 +144,11 @@ export const micaela = makeCharacter({
     headgear: 'headband', hair: 'braids', facial: 'none', cape: 'poncho', weapon: 'lasso', build: 'slim', height: 0.95, female: true,
     decor: ['feathers'],
   },
-  stats: { health: 950, walkSpeed: 4.7, backSpeed: 3.7, attack: 1.0, defense: 0.96, meterGain: 1.1 },
-  normals: { lightReach: 72, heavyReach: 104, lightStartup: 4 },
+  stats: { health: 1030, walkSpeed: 4.7, backSpeed: 3.7, attack: 1.06, defense: 1.02, meterGain: 1.1 },
+  normals: { lightReach: 72, heavyReach: 96, lightStartup: 5 },
   specials: [
-    P('Látigo de la Rebelión', 'Golpe de largo alcance con el látigo.', 70,
-      { vis: 'lasso', color: 0xe05ac0, color2: 0xffd070, speed: 20, w: 120, h: 30, yOff: 85, life: 22 }, { startup: 10, recovery: 22, cooldown: 24 }),
+    P('Látigo de la Rebelión', 'Golpe de largo alcance con el látigo.', 64,
+      { vis: 'lasso', color: 0xe05ac0, color2: 0xffd070, speed: 20, w: 120, h: 30, yOff: 85, life: 22 }, { startup: 12, recovery: 24, cooldown: 32 }),
     C('Furia de Vilcabamba', 'Rápido combo cuerpo a cuerpo.', 28, { hits: 4, interval: 7, step: 10, reach: 76, color: 0xe05ac0, launchFinisher: true }),
     P('Estrategia de Tungasuca', 'Trampa táctica en el suelo.', 70,
       { vis: 'trap', color: 0xe05ac0, color2: 0xffd070, speed: 0, w: 70, h: 40, yOff: 15, life: 420, effect: 'root', launch: -8 }, { recovery: 18, cooldown: 140 }),
@@ -168,7 +168,7 @@ export const katari = makeCharacter({
     headgear: 'feathers', hair: 'long', facial: 'none', cape: 'poncho', weapon: 'sling', build: 'heavy', height: 1.04,
     decor: ['warpaint', 'feathers'],
   },
-  stats: { health: 1080, walkSpeed: 3.7, backSpeed: 2.9, attack: 1.08, defense: 1.06, jumpVel: 16.6 },
+  stats: { health: 1010, walkSpeed: 3.7, backSpeed: 2.9, attack: 1.03, defense: 1.0, jumpVel: 16.6 },
   normals: { lightStartup: 6, heavyStartup: 12, heavyDmg: 1.12 },
   specials: [
     P('Honda del Altiplano', 'Poderoso proyectil de piedra.', 80,
@@ -192,7 +192,7 @@ export const manco = makeCharacter({
     headgear: 'inkaCrown', hair: 'long', facial: 'none', cape: 'unku', weapon: 'spear', build: 'normal', height: 1.05,
     decor: ['warpaint', 'armor'],
   },
-  stats: { health: 1000, walkSpeed: 4.1, attack: 1.02, defense: 1.0 },
+  stats: { health: 990, walkSpeed: 4.1, attack: 1.0, defense: 1.0 },
   normals: { lightReach: 90, heavyReach: 115, lightStartup: 6, heavyStartup: 12 },
   specials: [
     P('Lanza del Sol', 'Proyectil solar.', 78,
@@ -215,7 +215,7 @@ export const belgrano = makeCharacter({
     headgear: 'bicorne', hair: 'short', facial: 'sideburns', cape: 'banner', weapon: 'sabre', build: 'normal', height: 1.0,
     decor: ['epaulettes', 'sash'],
   },
-  stats: { health: 1000, meterGain: 1.1 },
+  stats: { health: 1040, attack: 1.04, defense: 1.02, meterGain: 1.1 },
   specials: [
     P('Bandera Celeste y Blanca', 'Proyectil de energía bicolor.', 76,
       { vis: 'flag', color: 0x6ec6ff, color2: 0xffffff, speed: 12, w: 70, h: 60, yOff: 90, life: 85 }),

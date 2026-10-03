@@ -52,7 +52,13 @@ export class FightScene extends Phaser.Scene {
   private ghostAge = [0, 0];
 
   constructor() { super('Fight'); }
-  init(d: { cfg: FightConfig }): void { this.cfg = d.cfg; }
+  init(d: { cfg: FightConfig }): void {
+    this.cfg = d.cfg;
+    this.acc = 0; this.slowToggle = false; this.camX = GAME_W / 2; this.camZ = 1; this.paused = false;
+    this.pauseObjs = []; this.pauseMenu = undefined; this.fatPlayer = null; this.fatDone = false; this.ended = false;
+    this.flashAlpha = 0; this.usedFatality = false; this.usedSecondary = false; this.fatalityName = '';
+    this.ghostAge = [0, 0]; this.ai = [null, null]; this.fx = new Effects();
+  }
 
   create(): void {
     fadeIn(this, 400);

@@ -24,7 +24,7 @@ export class SelectScene extends Phaser.Scene {
   private frame = 0;
   private lastTap = -1;
   constructor() { super('Select'); }
-  init(d: SelData): void { this.d = { step: 'p1', ...d }; }
+  init(d: SelData): void { this.d = { step: 'p1', ...d }; this.info = []; this.frame = 0; this.lastTap = -1; }
 
   create(): void {
     fadeIn(this);

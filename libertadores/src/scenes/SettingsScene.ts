@@ -64,6 +64,7 @@ export class RemapScene extends Phaser.Scene {
   private cells: Phaser.GameObjects.Text[][] = [[], []];
   private hint!: Phaser.GameObjects.Text;
   constructor() { super('Remap'); }
+  init(): void { this.sel = { p: 0, a: 0 }; this.waiting = false; this.cells = [[], []]; }
   create(): void {
     fadeIn(this);
     this.bd = new MenuBackdrop(this);

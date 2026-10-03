@@ -26,7 +26,7 @@ export function txt(scene: Phaser.Scene, x: number, y: number, s: string, size =
     wordWrap: o.wrap ? { width: o.wrap } : undefined,
   });
   t.setOrigin(...(o.origin ?? [0, 0]));
-  t.setResolution(2);
+  if (scene.game.renderer.type === Phaser.WEBGL) t.setResolution(2);
   if (o.shadow) t.setShadow(0, 3, '#000000', 6, true, true);
   if (o.depth !== undefined) t.setDepth(o.depth);
   if (o.alpha !== undefined) t.setAlpha(o.alpha);

@@ -19,9 +19,9 @@ export class MenuScene extends Phaser.Scene {
 
     // decorative portrait wall on the right
     const g = this.add.graphics().setDepth(-30);
-    const cols = 5, size = 108;
+    const cols = 5, size = 98;
     ROSTER.forEach((c, i) => {
-      const x = 760 + (i % cols) * (size + 10) + size / 2, y = 90 + Math.floor(i / cols) * (size + 10) + size / 2;
+      const x = 735 + (i % cols) * (size + 8) + size / 2, y = 110 + Math.floor(i / cols) * (size + 8) + size / 2;
       g.fillStyle(0x000000, 0.45); g.fillRoundedRect(x - size / 2, y - size / 2, size, size, 8);
       g.lineStyle(2, 0x7a5a1c, 0.7); g.strokeRoundedRect(x - size / 2, y - size / 2, size, size, 8);
       drawPortrait(g, c, x, y + 4, size - 8, { alpha: 0.78 });

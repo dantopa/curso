@@ -1413,7 +1413,7 @@ export function drawPortrait(g: Gfx, char: CharacterDef, cx: number, cy: number,
     poly([-12, sy - 6, -5, sy - 3, -7, sy + 7, -14, sy + 3], p.secondary, 1, 1.2);
     poly([12, sy - 6, 5, sy - 3, 7, sy + 7, 14, sy + 3], p.secondary, 1, 1.2);
     line(-13, sy - 4, -6, sy - 2, 1.6, p.trim, 0.95); line(13, sy - 4, 6, sy - 2, 1.6, p.trim, 0.95);
-    for (let i = 0; i < 3; i++) circ(10 - i * 0.6, sy + 22 + i * 7, 2.2, p.trim);
+    for (let i = 0; i < 3; i++) circ(10 - i * 0.6, sy + 15 + i * 5.5, 2.2, p.trim);
   }
   if (dec.includes('armor')) {
     poly([-shw + 4, sy + 2, shw - 4, sy + 2, shw - 8, bot, -shw + 8, bot], darken(p.secondary, 0.25), 1, 1.6);

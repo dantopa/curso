@@ -18,7 +18,7 @@ AudioManager.get().setVolumes({ master: s.master, sfx: s.sfx, music: s.music, vo
 input.attach();
 
 const game = new Phaser.Game({
-  type: Phaser.AUTO,
+  type: new URLSearchParams(location.search).has('canvas') ? Phaser.CANVAS : Phaser.AUTO,
   parent: 'game',
   width: GAME_W,
   height: GAME_H,

@@ -60,7 +60,7 @@ export class SetupScene extends Phaser.Scene {
       { label: '¡A PELEAR!', onSelect: () => this.start() },
       { label: 'Volver', onSelect: () => fadeTo(this, 'Select', { mode: this.d.mode, step: 'p2', p1: this.d.p1 }) },
     ];
-    new MenuList(this, GAME_W / 2, 460, items, { size: 28, gap: 52, width: 560, center: true });
+    new MenuList(this, GAME_W / 2, 412, items, { size: 27, gap: 46, width: 560, center: true });
     onNav(this, (k) => { if (k === 'back') fadeTo(this, 'Select', { mode: this.d.mode, step: 'p2', p1: this.d.p1 }); });
   }
   private drawStage(): void {
