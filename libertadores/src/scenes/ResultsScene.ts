@@ -4,7 +4,8 @@ import { AudioManager } from '../audio/AudioManager';
 import { getCharacter } from '../characters';
 import { STAGE_LABEL, STAGE_ORDER, stageMatches, matchLoser, type Tournament } from '../data/tournament';
 import { COLORS, CSS, MenuBackdrop, MenuList, fadeIn, fadeTo, onNav, panel, screenTitle, txt } from '../ui/theme';
-import { drawFighter, drawPortrait, drawPortraitBackdrop } from '../ui/fighterRenderer';
+import { drawPortrait, drawPortraitBackdrop } from '../ui/fighterRenderer';
+import { FighterVisual } from '../ui/fighterVisual';
 import { previewView } from '../ui/preview';
 import { shortName } from '../ui/names';
 import { charStat } from '../systems/storage';
@@ -16,9 +17,10 @@ export class ResultsScene extends Phaser.Scene {
   private g!: Phaser.GameObjects.Graphics;
   private frame = 0;
   private who = '';
+  private vis?: FighterVisual;
   private gf!: Phaser.GameObjects.Graphics;
   constructor() { super('Results'); }
-  init(d: { result?: MatchResult; tournament?: Tournament }): void { this.d = d; this.frame = 0; }
+  init(d: { result?: MatchResult; tournament?: Tournament }): void { this.d = d; this.frame = 0; this.vis = undefined; }
 
   create(): void {
     fadeIn(this, 500);
@@ -106,7 +108,8 @@ export class ResultsScene extends Phaser.Scene {
       const v = previewView(w, 280, 480, 0);
       v.anim = 'win'; v.animFrame = this.frame; v.animLen = 110; v.animT = Math.min(1, (this.frame % 110) / 110); v.clock = this.frame;
       this.gf.clear();
-      drawFighter(this.gf, v, { shadow: true });
+      if (!this.vis) this.vis = new FighterVisual(this, null, w, { depth: 7 });
+      this.vis.draw(this.gf, v, { shadow: true });
     }
   }
 }

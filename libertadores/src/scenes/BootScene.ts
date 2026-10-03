@@ -3,6 +3,7 @@ import { GAME_H, GAME_W } from '../combat/types';
 import { AudioManager } from '../audio/AudioManager';
 import { CSS, MenuBackdrop, fadeIn, txt } from '../ui/theme';
 import { CHARACTER_IDS } from '../characters';
+import { POSES, registerSprites, texKey, type Pose } from '../ui/fighterVisual';
 
 export class BootScene extends Phaser.Scene {
   private bd!: MenuBackdrop;
@@ -12,8 +13,20 @@ export class BootScene extends Phaser.Scene {
     this.load.setPath('assets/portraits/');
     for (const id of CHARACTER_IDS) this.load.image(`portrait_${id}`, `${id}.jpg`);
     this.load.on('loaderror', () => { /* missing portrait → procedural fallback */ });
+    // Optional painted fighter sprites listed by public/assets/fighters/manifest.json (npm run art:manifest)
+    this.load.setPath('assets/fighters/');
+    this.load.json('fighterManifest', 'manifest.json');
+    this.load.once('filecomplete-json-fighterManifest', (_k: string, _t: string, data: Record<string, string[]>) => {
+      this.load.setPath('assets/fighters/');
+      for (const [id, poses] of Object.entries(data ?? {})) for (const p of poses) if (POSES.includes(p as Pose)) this.load.image(texKey(id, p as Pose), `${id}/${p}.png`);
+    });
   }
   create(): void {
+    const manifest = (this.cache.json.get('fighterManifest') ?? {}) as Record<string, string[]>;
+    for (const [id, poses] of Object.entries(manifest)) {
+      const ok = poses.filter((p) => this.textures.exists(texKey(id, p as Pose))) as Pose[];
+      if (ok.includes('idle')) registerSprites(id, ok);
+    }
     fadeIn(this, 600);
     this.bd = new MenuBackdrop(this);
     txt(this, GAME_W / 2, 250, 'LIBERTADORES', 108, CSS.goldLight, { title: true, origin: [0.5, 0.5], shadow: true, strokeW: 8 });

@@ -4,7 +4,8 @@ import { AudioManager } from '../audio/AudioManager';
 import { getCharacter } from '../characters';
 import { SECONDARY_WINS_REQUIRED, charStat, secondaryUnlocked } from '../systems/storage';
 import { COLORS, CSS, MenuBackdrop, drawSunEmblem, fadeIn, fadeTo, navFrom, portraitImage, txt } from '../ui/theme';
-import { drawFighter, drawPortrait, drawPortraitBackdrop } from '../ui/fighterRenderer';
+import { drawPortrait, drawPortraitBackdrop } from '../ui/fighterRenderer';
+import { FighterVisual } from '../ui/fighterVisual';
 import { previewView } from '../ui/preview';
 import { shortName } from '../ui/names';
 import type { Mode } from '../game/flow';
@@ -30,6 +31,7 @@ export class SelectScene extends Phaser.Scene {
   private info: Phaser.GameObjects.GameObject[] = [];
   private frame = 0;
   private lastTap = -1;
+  private vis?: FighterVisual;
   constructor() { super('Select'); }
   init(d: SelData): void { this.d = { step: 'p1', ...d }; this.info = []; this.frame = 0; this.lastTap = -1; }
 
@@ -168,6 +170,7 @@ export class SelectScene extends Phaser.Scene {
     this.bd.update(t);
     this.frame++;
     const g = this.gFighter; g.clear();
-    drawFighter(g, previewView(this.cur, 92, SY + 150, this.frame), { scale: 0.62, shadow: false });
+    if (!this.vis || this.vis.char.id !== this.cur.id) { this.vis?.destroy(); this.vis = new FighterVisual(this, null, this.cur, { depth: 9 }); }
+    this.vis.draw(g, previewView(this.cur, 92, SY + 150, this.frame), { scale: 0.62, shadow: false });
   }
 }

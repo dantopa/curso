@@ -9,7 +9,7 @@ import { StageRenderer } from '../ui/stageRenderer';
 import { Effects } from '../systems/effects';
 import { Hud } from '../ui/hud';
 import { FatalityPlayer } from '../ui/fatalityPlayer';
-import { drawFighter } from '../ui/fighterRenderer';
+import { FighterVisual } from '../ui/fighterVisual';
 import { drawGhost, drawProjectile } from '../ui/projectileRenderer';
 import { COLORS, CSS, MenuList, fadeIn, fadeTo, navFrom, panel, txt } from '../ui/theme';
 import { arrows } from './SelectScene';
@@ -32,6 +32,7 @@ export class FightScene extends Phaser.Scene {
   private gFx!: Phaser.GameObjects.Graphics;
   private flash!: Phaser.GameObjects.Graphics;
   private fx = new Effects();
+  private vis: FighterVisual[] = [];
   private hud!: Hud;
   private ai: (AIController | null)[] = [null, null];
   private acc = 0;
@@ -76,6 +77,7 @@ export class FightScene extends Phaser.Scene {
     this.gGhost = this.add.graphics(); this.gFighter = this.add.graphics();
     this.gProj = this.add.graphics(); this.gFx = this.add.graphics();
     this.world.add([this.gGhost, this.gFighter, this.gProj, this.gFx]);
+    this.vis = [new FighterVisual(this, this.world, a, { after: this.gFighter }), new FighterVisual(this, this.world, b, { after: this.gFighter })];
     this.flash = this.add.graphics().setDepth(90);
     this.hud = new Hud(this, [a, b], [cfg.p1Human, cfg.p2Human], cfg.label);
     if (!cfg.p1Human) this.ai[0] = new AIController(0, cfg.difficulty, 11);
@@ -345,7 +347,7 @@ export class FightScene extends Phaser.Scene {
         this.gGhost.fillEllipse(f.x, f.y - 90, 150, 230);
       }
       const dead = f.state === 'dead' && s.phase === 'finish';
-      drawFighter(this.gFighter, f, { alpha: dead ? 0.95 : 1, flash: f.hitFlash > 0 ? f.hitFlash / 7 : 0, shadow: true });
+      this.vis[i].draw(this.gFighter, f, { alpha: dead ? 0.95 : 1, flash: f.hitFlash > 0 ? f.hitFlash / 7 : 0, shadow: true });
     }
     for (const p of s.projectiles) {
       if (p.delay > 0) continue;

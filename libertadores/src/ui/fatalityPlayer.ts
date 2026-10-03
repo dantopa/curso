@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { ARENA, GAME_H, GAME_W, type FatalityDef, type FighterView } from '../combat/types';
 import { AudioManager } from '../audio/AudioManager';
 import { drawFatalityBack, drawFatalityFront, fatalityBeats, getFatalityActors, type ActorPose, type FxCtx } from '../fatality/fx';
-import { drawFighter } from './fighterRenderer';
+import { FighterVisual } from './fighterVisual';
 import { CSS, txt } from './theme';
 
 /** Plays the cinematic finishing move on top of the fight scene. Skippable. */
@@ -18,6 +18,8 @@ export class FatalityPlayer {
   private beats: { t: number; sfx: string }[];
   private beatIdx = 0;
   private ctx: FxCtx;
+  private vw: FighterVisual;
+  private vl: FighterVisual;
   done = false;
   private durationMs: number;
   private clock = 0;
@@ -29,6 +31,8 @@ export class FatalityPlayer {
     this.back = scene.add.graphics().setDepth(200);
     this.mid = scene.add.graphics().setDepth(201);
     this.front = scene.add.graphics().setDepth(202);
+    this.vw = new FighterVisual(scene, null, winner.char, { depth: 201.5 });
+    this.vl = new FighterVisual(scene, null, loser.char, { depth: 201.4 });
     this.bars = scene.add.graphics().setDepth(210);
     this.durationMs = (def.duration / 60) * 1000;
     this.ctx = {
@@ -64,14 +68,16 @@ export class FatalityPlayer {
     }
     const t = this.t;
     const actors = getFatalityActors(this.def.fx, t, this.ctx);
+    if (actors.loser.hidden) this.vl.hide();
+    if (actors.winner.hidden) this.vw.hide();
     this.back.clear(); this.mid.clear(); this.front.clear(); this.bars.clear();
     // base dark backdrop dims the stage
     this.back.fillStyle(0x000000, Math.min(0.55, t * 6));
     this.back.fillRect(0, 0, GAME_W, GAME_H);
     drawFatalityBack(this.back, this.def.fx, t, this.ctx);
     const l = actors.loser, w = actors.winner;
-    if (!l.hidden) drawFighter(this.mid, this.view(this.loser, l, true), { alpha: l.alpha, scale: l.scale, xOffset: (Math.random() - 0.5) * l.shake, shadow: true });
-    if (!w.hidden) drawFighter(this.mid, this.view(this.winner, w, true), { alpha: w.alpha, scale: w.scale, shadow: true });
+    if (!l.hidden) this.vl.draw(this.mid, this.view(this.loser, l, true), { alpha: l.alpha, scale: l.scale, xOffset: (Math.random() - 0.5) * l.shake, shadow: true });
+    if (!w.hidden) this.vw.draw(this.mid, this.view(this.winner, w, true), { alpha: w.alpha, scale: w.scale, shadow: true });
     drawFatalityFront(this.front, this.def.fx, t, this.ctx);
     // letterbox
     const bar = 70 * Math.min(1, t * 12) * Math.min(1, (1 - t) * 20 + 0.3);
@@ -85,6 +91,7 @@ export class FatalityPlayer {
   }
 
   destroy(): void {
+    this.vw.destroy(); this.vl.destroy();
     [this.back, this.mid, this.front, this.bars, this.title, this.quote, this.tag].forEach((o) => o.destroy());
   }
 }

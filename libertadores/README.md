@@ -110,6 +110,13 @@ motor, la IA, la selección, el torneo y los tests lo recogen solos (el torneo e
 Rendimiento: el arte se dibuja con `Graphics` cada frame; en máquinas sin GPU (WebGL por software) puede ir lento: usá
 `?canvas` o un navegador con aceleración por hardware.
 
+## Arte pintado en combate (opcional)
+
+Los luchadores se dibujan proceduralmente, pero el juego acepta ilustraciones pintadas por personaje y por pose:
+`public/assets/fighters/<id>/<pose>.png` + `npm run art:manifest`. Ver `docs/ART_PIPELINE.md` (formato, poses y
+animación por transformaciones) y `npm run art:prompts` (genera `docs/ART_PROMPTS.md` con un prompt por personaje y pose).
+Se puede migrar de a un personaje; los que no tienen sprites siguen con el render procedural.
+
 ## Créditos
 
 Diseño, código, arte y audio generados proceduralmente. Ficción histórica de homenaje; sin relación con juegos ni marcas
