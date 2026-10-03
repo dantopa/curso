@@ -110,9 +110,13 @@ motor, la IA, la selección, el torneo y los tests lo recogen solos (el torneo e
 Rendimiento: el arte se dibuja con `Graphics` cada frame; en máquinas sin GPU (WebGL por software) puede ir lento: usá
 `?canvas` o un navegador con aceleración por hardware.
 
-## Arte pintado en combate (opcional)
+## Arte pintado en combate
 
-Los luchadores se dibujan proceduralmente, pero el juego acepta ilustraciones pintadas por personaje y por pose:
+Los 20 luchadores tienen ilustración pintada de cuerpo entero (`public/assets/fighters/<id>/idle.png`), generada
+localmente con SDXL-Turbo (`scripts/art/generate.py` + `characters.json`, recorte con rembg, selección e instalación con
+`scripts/art/install.py`; `scripts/art/rescue.py` re-recorta descartes con un modelo de segmentación de personas) y
+animada como títere de papel (piernas/torso/cabeza con bisagras) más efectos 2.5D (desactivables en Opciones).
+Si falta la ilustración de un personaje se usa el render procedural. Se aceptan además poses extra por personaje:
 `public/assets/fighters/<id>/<pose>.png` + `npm run art:manifest`. Ver `docs/ART_PIPELINE.md` (formato, poses y
 animación por transformaciones) y `npm run art:prompts` (genera `docs/ART_PROMPTS.md` con un prompt por personaje y pose).
 Se puede migrar de a un personaje; los que no tienen sprites siguen con el render procedural.

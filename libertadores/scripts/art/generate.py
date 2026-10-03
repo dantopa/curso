@@ -133,6 +133,7 @@ def main():
     ap.add_argument("--guidance", type=float, default=0.0,
                     help="0.0 for turbo (negative prompt ignored when 0); try 1.2-2.0 to enable negative prompt")
     ap.add_argument("--matter", default="isnet-general-use", help="rembg model: u2net, isnet-general-use, ...")
+    ap.add_argument("--keep-rejected", action="store_true", help="save rejected raw generations for debugging")
     ap.add_argument("--spec", default=str(HERE / "characters.json"))
     ap.add_argument("--out", default=str(OUT_ROOT))
     a = ap.parse_args()
@@ -164,6 +165,8 @@ def main():
             bb = cut.getchannel("A").point(lambda v: 255 if v > 128 else 0).getbbox()
             cropped = (not bb) or bb[1] <= 1 or bb[3] >= a.height - 1
             print(f"  seed {seed}: gen {t2-t1:.1f}s  matte {time.time()-t2:.1f}s" + ("  REJECTED (touches top/bottom edge = cropped)" if cropped else ""), flush=True)
+            if cropped and a.keep_rejected:
+                img.save(d / f"rejected_{seed}.png")
             if not cropped:
                 img.save(d / f"raw_{seed}.png")
                 p = d / f"cand_{seed}.png"; place_on_canvas(cut).save(p); paths.append(p); made += 1

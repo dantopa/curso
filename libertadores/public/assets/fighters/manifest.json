@@ -1,4 +1,7 @@
 {
+ "artigas": [
+  "idle"
+ ],
  "belgrano": [
   "idle"
  ],
@@ -26,6 +29,9 @@
  "katari": [
   "idle"
  ],
+ "louverture": [
+  "idle"
+ ],
  "manco": [
   "idle"
  ],
@@ -33,6 +39,9 @@
   "idle"
  ],
  "micaela": [
+  "idle"
+ ],
+ "miranda": [
   "idle"
  ],
  "morelos": [
