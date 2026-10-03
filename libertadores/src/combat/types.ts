@@ -66,6 +66,11 @@ export interface FighterView {
   buffs: BuffType[];    // active buffs (renderer draws aura)
   vx: number;
   vy: number;
+  /** kind of the special being performed (null/undefined otherwise); lets frame-animated art pick the right clip */
+  moveKind?: SpecialKind | null;
+  /** combo specials: index of the current swing and total swings */
+  swing?: number;
+  swings?: number;
 }
 
 /* -------------------------------------------------------------- characters */

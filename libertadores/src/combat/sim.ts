@@ -58,7 +58,6 @@ export function specialColor(def: SpecialDef): number {
     ?? def.teleport?.color ?? def.aerial?.color ?? def.evade?.color ?? 0xffffff;
 }
 
-const isNeutral = (f: Fighter) => f.state === 'idle' || f.state === 'walk' || f.state === 'crouch' || f.state === 'dash' || f.state === 'jump';
 
 function defaultSpec(over: Partial<HitSpec>): HitSpec {
   return {
@@ -298,6 +297,26 @@ export class FightSim {
     f.animLen = len;
   }
 
+  /**
+   * Grounded fighters turn to face the opponent whenever they are not committed to a move: neutral/blocking,
+   * recovering from an attack or special, in hit-stun, dazed, getting up or celebrating. A hit/special never
+   * changes facing mid-startup/active (the hitbox direction is locked); a jump keeps its facing until landing.
+   */
+  private canReface(f: Fighter): boolean {
+    switch (f.state) {
+      case 'idle': case 'walk': case 'crouch': case 'block': case 'hit': case 'getup': case 'dazed': case 'win': return true;
+      case 'jump': return true; // only reached when grounded (callers check); landing re-faces immediately
+      case 'attack': return !!f.atk && f.atk.frame >= f.atk.data.startup + f.atk.data.active;
+      case 'special': {
+        const s = f.sp;
+        if (!s) return true;
+        if (s.stage === 'rec' || s.stage === 'land') return true;
+        return (s.def.kind === 'proj' || s.def.kind === 'buff') && s.spawned;
+      }
+      default: return false; // dash, launched, knockdown, dead, intro
+    }
+  }
+
   private setState(f: Fighter, s: Fighter['state']): void {
     if (f.state !== s) { f.state = s; f.sf = 0; }
   }
@@ -306,9 +325,7 @@ export class FightSim {
     this.tickTimers(f);
     f.sf++; f.animFrame++;
     const h = inp.held;
-    if (isNeutral(f) || f.state === 'block') {
-      if (f.grounded && f.state !== 'dash' && (!f.sp)) f.facing = o.x >= f.x ? 1 : -1;
-    }
+    if (f.grounded && this.canReface(f)) f.facing = o.x >= f.x ? 1 : -1;
     switch (f.state) {
       case 'idle': case 'walk': case 'crouch': case 'block': this.groundActions(f, o, inp); break;
       case 'jump': this.airActions(f, o, inp); break;
@@ -972,6 +989,11 @@ export class FightSim {
   private land(f: Fighter): void {
     f.y = ARENA.ground; f.vy = 0; f.grounded = true;
     this.events.push({ type: 'land', x: f.x, y: f.y });
+    // MK-style: after a jump (possibly over the opponent) the fighter turns to face the opponent on landing
+    if (f.state === 'jump' || f.state === 'attack' || f.state === 'special') {
+      const o = this.fighters[1 - f.idx];
+      if (!(f.state === 'special' && f.sp && f.sp.def.kind !== 'aerial')) f.facing = o.x >= f.x ? 1 : -1;
+    }
     switch (f.state) {
       case 'jump': this.setState(f, 'idle'); f.vx = 0; f.airUsed = false; break;
       case 'launched':
@@ -1013,6 +1035,7 @@ export class FightSim {
     for (const f of this.fighters) {
       f.buffs = f.activeBuffs.map((b) => b.type);
       f.phase = null; f.phaseT = 0; f.animT = f.animLen > 0 ? Math.min(1, f.animFrame / f.animLen) : 0;
+      f.moveKind = null; f.swing = 0; f.swings = 0;
       if (f.state === 'attack' && f.atk) {
         const d = f.atk.data, fr = f.atk.frame;
         if (fr < d.startup) { f.phase = 'startup'; f.phaseT = fr / d.startup; }
@@ -1026,6 +1049,11 @@ export class FightSim {
         else if (s.frame < def.startup + act) { f.phase = 'active'; f.phaseT = (s.frame - def.startup) / act; }
         else { f.phase = 'recovery'; f.phaseT = Math.min(1, (s.frame - def.startup - act) / Math.max(1, def.recovery)); }
         f.animT = Math.min(1, s.frame / Math.min(s.total, def.startup + act + def.recovery));
+        f.moveKind = def.kind;
+        if (def.kind === 'combo') {
+          const n = def.combo!.hits + (s.ex ? 1 : 0);
+          f.swings = n; f.swing = Math.max(0, Math.min(n - 1, Math.floor((s.frame - def.startup) / def.combo!.interval)));
+        }
       }
       if (this.phase === 'intro' && this.phaseT < 70 && f.state === 'idle') { f.anim = 'intro'; f.animT = this.phaseT / 70; }
     }

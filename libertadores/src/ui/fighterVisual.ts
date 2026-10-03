@@ -3,6 +3,7 @@ import type { AnimName, CharacterDef, FighterView } from '../combat/types';
 import { ARENA } from '../combat/types';
 import { drawFighter, type DrawOpts } from './fighterRenderer';
 import { PuppetRig, newPuppetPose, resetPuppetPose, type PuppetPose } from './puppetRig';
+import { TURN_TICKS, frameByProgress, selectFrame, type FrameAnimDef, type FrameAnimsFile, type FrameView } from './frameAnim';
 
 /**
  * Painted-sprite support. Drop transparent PNGs (character facing RIGHT, feet at the bottom edge) into
@@ -19,6 +20,15 @@ const registry = new Map<string, Set<Pose>>();
 export const texKey = (id: string, pose: Pose) => `fighter_${id}_${pose}`;
 export function registerSprites(id: string, poses: Pose[]): void { registry.set(id, new Set(poses)); }
 export function hasSprites(id: string): boolean { return registry.get(id)?.has('idle') ?? false; }
+
+/** Frame-by-frame animation packs (public/assets/fighters/<id>/anims.json), see src/ui/frameAnim.ts. */
+interface FaSet { file: FrameAnimsFile; keys: Record<string, string[]> }
+const faRegistry = new Map<string, FaSet>();
+export function registerFrameAnims(id: string, file: FrameAnimsFile, keys: Record<string, string[]>): void { faRegistry.set(id, { file, keys }); }
+export function hasFrameAnims(id: string): boolean { return faRegistry.has(id); }
+/** Characters whose painted PNGs face LEFT (sprite.json {"flipIdle": true}): mirrored once so they face right. */
+const flipRegistry = new Set<string>();
+export function setFlipIdle(id: string, on: boolean): void { if (on) flipRegistry.add(id); else flipRegistry.delete(id); }
 
 function poseFor(anim: AnimName): Pose {
   switch (anim) {
@@ -185,6 +195,13 @@ function crescent(g: Phaser.GameObjects.Graphics, cx: number, cy: number, r: num
   g.closePath(); g.fillPath();
 }
 
+/** Grounded and actionable (neutral/blocking, or the tick the fighter lands from a jump): a facing change plays the turn-around. */
+function canTurn(f: FighterView): boolean {
+  if (f.phase !== null) return false;
+  const a = f.anim;
+  return a === 'idle' || a === 'walkF' || a === 'walkB' || a === 'crouch' || a === 'block' || a === 'crouchBlock' || (a === 'jumpDown' && f.vy === 0);
+}
+
 /** One per on-screen fighter. Uses a painted Image when sprites exist, otherwise the procedural renderer. */
 export class FighterVisual {
   private img: Phaser.GameObjects.Image | null = null;
@@ -193,6 +210,11 @@ export class FighterVisual {
   private rimRig: PuppetRig | null = null;
   /** 2.5D lighting (set by Depth25D): world x of the dominant light, strength 0..1 (0 = off) and its color. */
   private lightX = 0; private lightStr = 0; private lightColor = 0xffa050;
+  /** turn-around state: last seen facing/clock and ticks since the turn started (-1 = not turning) */
+  private lastFacing = 0; private lastClock = -1; private turnT = -1; private turnFrom = 1;
+  /** recent sword-tip positions (world x,y pairs) for the frame-art slash trail */
+  private tips: number[] = [];
+  private fv: FrameView = { anim: 'idle', animFrame: 0, animLen: 0, animT: 0, phase: null, phaseT: 0, vy: 0 };
   constructor(
     private scene: Phaser.Scene, private parent: Phaser.GameObjects.Container | null, readonly char: CharacterDef,
     private o: { after?: Phaser.GameObjects.GameObject; depth?: number } = {},
@@ -200,7 +222,7 @@ export class FighterVisual {
 
   setLight(x: number, strength: number, color: number): void { this.lightX = x; this.lightStr = strength; this.lightColor = color; }
 
-  get sprite(): boolean { return hasSprites(this.char.id); }
+  get sprite(): boolean { return hasSprites(this.char.id) || hasFrameAnims(this.char.id); }
 
   private place(go: Phaser.GameObjects.Container | Phaser.GameObjects.Image): void {
     if (this.o.depth !== undefined) go.setDepth(this.o.depth);
@@ -211,7 +233,7 @@ export class FighterVisual {
 
   private ensure(): Phaser.GameObjects.Image {
     if (!this.img) {
-      this.img = this.scene.add.image(0, 0, texKey(this.char.id, 'idle')).setOrigin(0.5, 1);
+      this.img = this.scene.add.image(0, 0, hasSprites(this.char.id) ? texKey(this.char.id, 'idle') : '__DEFAULT').setOrigin(0.5, 1);
       this.place(this.img);
     }
     return this.img;
@@ -230,28 +252,78 @@ export class FighterVisual {
     return this.rimImg;
   }
 
+  /** Rim light behind a whole-image sprite (pose art or animation frame). */
+  private drawRimImg(img: Phaser.GameObjects.Image, on: boolean, rimDx: number, rimA: number): void {
+    if (!on) { this.rimImg?.setVisible(false); return; }
+    const rim = this.ensureRimImg(img);
+    const rk = rimTexture(this.scene, img.texture.key, this.lightColor);
+    if (rim.texture.key !== rk) rim.setTexture(rk);
+    rim.setOrigin(img.originX, img.originY).setPosition(img.x + rimDx, img.y - 1).setScale(img.scaleX, img.scaleY).setRotation(img.rotation).setAlpha(rimA).setVisible(true);
+    if (rk === img.texture.key) rim.setTintFill(this.lightColor); else rim.clearTint();
+  }
+
+  /** Tracks facing changes. Returns the squash factor (1 = none) and the facing to mirror with while turning. */
+  private updateTurn(f: FighterView, o: DrawOpts): void {
+    const dc = f.clock - this.lastClock;
+    if (this.lastFacing === 0 || dc < 0 || dc > 20 || f.hidden || o.pose !== undefined) {
+      this.turnT = -1;
+    } else if (f.facing !== this.lastFacing) {
+      this.turnFrom = this.lastFacing;
+      this.turnT = canTurn(f) ? 0 : -1;
+    } else if (this.turnT >= 0) {
+      if (!canTurn(f)) this.turnT = -1;
+      else { this.turnT += dc; if (this.turnT >= TURN_TICKS) this.turnT = -1; }
+    }
+    this.lastFacing = f.facing; this.lastClock = f.clock;
+  }
+  /** Horizontal squash while turning: 1 → 0 at the middle (engine flip) → 1. */
+  private get squash(): number { return this.turnT < 0 ? 1 : Math.max(0.06, Math.abs(this.turnT - TURN_TICKS / 2) / (TURN_TICKS / 2)); }
+  /** Facing to draw with: the old facing until the middle of the turn. */
+  private shownFace(f: FighterView): number { return this.turnT >= 0 && this.turnT < TURN_TICKS / 2 ? this.turnFrom : f.facing; }
+
   private ensureRig(): PuppetRig {
     if (!this.rig) { this.rig = new PuppetRig(this.scene); this.place(this.rig.root); }
     return this.rig;
   }
 
   private resolve(p: Pose): Pose {
-    const have = registry.get(this.char.id)!;
+    const have = registry.get(this.char.id) ?? new Set<Pose>(['idle']);
     if (have.has(p)) return p;
     for (const f of POSE_FALLBACK[p]) if (have.has(f)) return f;
     return 'idle';
   }
 
+  /** Frame-animation clip for this view (turn overrides everything), or null → legacy sprite / puppet / procedural. */
+  private chooseFrame(fa: FaSet, f: FighterView, want: AnimName): { name: string; index: number; def: FrameAnimDef } | null {
+    if (this.turnT >= 0 && fa.file.anims.turn) {
+      const def = fa.file.anims.turn;
+      return { name: 'turn', index: frameByProgress(def, this.turnT / TURN_TICKS), def };
+    }
+    const v = this.fv;
+    v.anim = want; v.animFrame = f.animFrame; v.animLen = f.animLen; v.animT = f.animT; v.phase = f.phase; v.phaseT = f.phaseT; v.vy = f.vy;
+    v.moveKind = f.moveKind; v.swing = f.swing; v.swings = f.swings;
+    return selectFrame(fa.file.anims, v, f.char.stats.jumpVel);
+  }
+
   /** `g` is the shared graphics layer (shadow, auras, trails; also used for the procedural fallback). */
   draw(g: Phaser.GameObjects.Graphics, f: FighterView, o: DrawOpts = {}): void {
-    if (!this.sprite) { this.img?.setVisible(false); this.rig?.hide(); drawFighter(g, f, o); return; }
+    const id = this.char.id, legacy = hasSprites(id), fa = faRegistry.get(id);
+    this.updateTurn(f, o);
+    if (!legacy && !fa) {
+      this.img?.setVisible(false); this.rig?.hide();
+      if (this.turnT >= 0) drawFighter(g, { ...f, facing: this.shownFace(f) as 1 | -1 }, { ...o, xScale: this.squash });
+      else drawFighter(g, f, o);
+      return;
+    }
     if (f.hidden) { this.hide(); return; }
     const want = o.pose ?? f.anim;
+    const choice = fa ? this.chooseFrame(fa, f, want) : null;
     const wantPose = poseFor(want);
-    const pose = this.resolve(wantPose);
-    const idleTex = this.scene.textures.get(texKey(this.char.id, 'idle')).getSourceImage();
-    const base = (224 * this.char.art.height * (o.scale ?? 1)) / (idleTex.height || 1);
-    const t = f.clock, face = f.facing, phase = f.phase, pt = f.phaseT;
+    const pose = legacy ? this.resolve(wantPose) : 'idle';
+    const baseRef = choice ? fa!.file.standHeight : ((legacy ? this.scene.textures.get(texKey(id, 'idle')).getSourceImage().height : 0) || 1);
+    const base = (224 * this.char.art.height * (o.scale ?? 1)) / baseRef;
+    const t = f.clock, face = this.shownFace(f), phase = f.phase, pt = f.phaseT;
+    const sq = this.squash, flipS = flipRegistry.has(id) ? -1 : 1;
     const ox = o.xOffset ?? 0, oy = o.yOffset ?? 0;
     const alpha = (o.alpha ?? 1) * (want === 'evade' ? 0.4 : 1);
     const flash = (o.flash ?? 0) > 0.05;
@@ -259,30 +331,37 @@ export class FighterVisual {
     const toward = this.lightX >= f.x ? 1 : -1;
     const rimA = alpha * Math.min(0.6, 0.25 + this.lightStr * 0.45);
     const rimDx = toward * 2.5;
+    let tipDef: FrameAnimDef | null = null, tipIdx = 0;
 
-    if (pose === 'idle') {
+    if (choice) {
+      this.rig?.hide(); this.rimRig?.hide();
+      const img = this.ensure();
+      const fk = fa!.keys[choice.name][choice.index];
+      if (img.texture.key !== fk) img.setTexture(fk);
+      const { canvas, anchor } = fa!.file;
+      img.setOrigin(anchor[0] / canvas[0], anchor[1] / canvas[1]);
+      img.setVisible(true).setPosition(f.x + ox, f.y + oy).setScale(base * (face === 1 ? 1 : -1) * sq, base).setRotation(0).setAlpha(alpha);
+      if (flash) img.setTintFill(0xffffff); else img.clearTint();
+      this.drawRimImg(img, lit && !flash, rimDx, rimA);
+      if (choice.def.swordTip) { tipDef = choice.def; tipIdx = choice.index; }
+    } else if (pose === 'idle') {
       // only idle art available (or asked for): paper-puppet it
       this.img?.setVisible(false);
       const p = puppetFor(f, want);
       this.rimImg?.setVisible(false);
       const rig = this.ensureRig();
-      rig.apply(this.scene, texKey(this.char.id, 'idle'), base, f.x + ox, f.y + oy, face, alpha, flash, p);
+      rig.apply(this.scene, texKey(id, 'idle'), base, f.x + ox, f.y + oy, face, alpha, flash, p, -1, sq * flipS);
       if (lit && !flash) {
-        const rk = rimTexture(this.scene, texKey(this.char.id, 'idle'), this.lightColor);
-        this.ensureRimRig(rig).apply(this.scene, rk, base, f.x + ox + rimDx, f.y + oy - 1, face, rimA, false, p, rk === texKey(this.char.id, 'idle') ? this.lightColor : -1);
+        const rk = rimTexture(this.scene, texKey(id, 'idle'), this.lightColor);
+        this.ensureRimRig(rig).apply(this.scene, rk, base, f.x + ox + rimDx, f.y + oy - 1, face, rimA, false, p, rk === texKey(id, 'idle') ? this.lightColor : -1, sq * flipS);
       }
       else this.rimRig?.hide();
     } else {
       this.rig?.hide(); this.rimRig?.hide();
       const img = this.ensure();
-      this.drawWhole(img, f, o, want, wantPose, pose, base, alpha, flash);
-      if (lit && !flash) {
-        const rim = this.ensureRimImg(img);
-        const rk = rimTexture(this.scene, img.texture.key, this.lightColor);
-        if (rim.texture.key !== rk) rim.setTexture(rk);
-        rim.setPosition(img.x + rimDx, img.y - 1).setScale(img.scaleX, img.scaleY).setRotation(img.rotation).setAlpha(rimA).setVisible(true);
-        if (rk === img.texture.key) rim.setTintFill(this.lightColor);
-      } else this.rimImg?.setVisible(false);
+      if (img.originX !== 0.5 || img.originY !== 1) img.setOrigin(0.5, 1);
+      this.drawWhole(img, f, o, want, wantPose, pose, base, alpha, flash, face, sq * flipS);
+      this.drawRimImg(img, lit && !flash, rimDx, rimA);
     }
 
     // shadow, aura and slash trail go on the shared graphics layer
@@ -306,7 +385,21 @@ export class FighterVisual {
       const c = f.char.art.palette.aura;
       for (let i = 0; i < 4; i++) { g.fillStyle(c, 0.07 + 0.02 * Math.sin(t * 0.2 + i)); g.fillEllipse(f.x, f.y - 100, 120 + i * 22, 220 + i * 18); }
     }
-    if (phase === 'active' && (want === 'lightA' || want === 'heavyA' || want === 'slash' || want === 'airLight' || want === 'airHeavy' || want === 'crouchLight' || want === 'crouchHeavy')) {
+    // sword-tip streak for frame art that provides swordTip points (replaces the generic crescent)
+    if (tipDef && (phase === 'active' || (phase === 'recovery' && pt < 0.35) || want === 'slash')) {
+      const [px, py] = tipDef.swordTip![tipIdx], an = fa!.file.anchor;
+      const wx = f.x + ox + (face === 1 ? 1 : -1) * (px - an[0]) * base, wy = f.y + oy + (py - an[1]) * base;
+      const tp = this.tips;
+      if (tp.length >= 10) tp.splice(0, 2);
+      tp.push(wx, wy);
+      const c = f.char.art.palette.aura;
+      for (let i = 2; i < tp.length; i += 2) {
+        const k = i / tp.length;
+        g.lineStyle(14 * k, c, 0.3 * k); g.lineBetween(tp[i - 2], tp[i - 1], tp[i], tp[i + 1]);
+        g.lineStyle(5 * k, 0xffffff, 0.85 * k); g.lineBetween(tp[i - 2], tp[i - 1], tp[i], tp[i + 1]);
+      }
+    } else if (this.tips.length) this.tips.length = 0;
+    if (!tipDef && phase === 'active' && (want === 'lightA' || want === 'heavyA' || want === 'slash' || want === 'airLight' || want === 'airHeavy' || want === 'crouchLight' || want === 'crouchHeavy')) {
       const heavy = want === 'heavyA' || want === 'airHeavy' || want === 'crouchHeavy';
       const low = want === 'crouchLight' || want === 'crouchHeavy';
       const c = f.char.art.palette.aura;
@@ -333,11 +426,11 @@ export class FighterVisual {
   }
 
   /** Dedicated pose art: one whole image, animated by transforms (pose art wins over puppeting). */
-  private drawWhole(img: Phaser.GameObjects.Image, f: FighterView, o: DrawOpts, want: AnimName, wantPose: Pose, pose: Pose, base: number, alpha: number, flash: boolean): void {
+  private drawWhole(img: Phaser.GameObjects.Image, f: FighterView, o: DrawOpts, want: AnimName, wantPose: Pose, pose: Pose, base: number, alpha: number, flash: boolean, shown: number, sx: number): void {
     const key = texKey(this.char.id, pose);
     if (img.texture.key !== key) img.setTexture(key);
     let scaleX = base, scaleY = base, rot = 0, dx = 0, dy = 0;
-    const t = f.clock, face = f.facing, phase = f.phase, pt = f.phaseT;
+    const t = f.clock, face = shown, phase = f.phase, pt = f.phaseT;
     const wasMissing = pose !== wantPose;
     switch (want) {
       case 'idle': case 'intro': scaleY *= 1 + 0.012 * Math.sin(t * 0.08); break;
@@ -367,7 +460,7 @@ export class FighterVisual {
     }
     img.setVisible(true);
     img.setPosition(f.x + (o.xOffset ?? 0) + dx, f.y + (o.yOffset ?? 0) + dy);
-    img.setScale(scaleX * (face === 1 ? 1 : -1), scaleY);
+    img.setScale(scaleX * (face === 1 ? 1 : -1) * sx, scaleY);
     img.setRotation(rot);
     img.setAlpha(alpha);
     if (flash) img.setTintFill(0xffffff); else img.clearTint();

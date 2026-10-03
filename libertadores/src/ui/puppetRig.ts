@@ -69,7 +69,7 @@ export class PuppetRig {
   }
 
   /** Apply a pose. `base` is world-pixels per texel. */
-  apply(scene: Phaser.Scene, key: string, base: number, x: number, y: number, face: number, alpha: number, flash: boolean, p: PuppetPose, fill = -1): void {
+  apply(scene: Phaser.Scene, key: string, base: number, x: number, y: number, face: number, alpha: number, flash: boolean, p: PuppetPose, fill = -1, sx = 1): void {
     this.bind(scene, key, base);
     const r = this.root;
     r.setVisible(true);
@@ -79,7 +79,7 @@ export class PuppetRig {
     // rotate around a point `m` above the feet, then drop that point to height `h`
     r.setPosition(x + p.rootDx * face - m * Math.sin(rot), y + p.rootDy - h + m * Math.cos(rot));
     r.setRotation(rot);
-    r.setScale(face, 1);
+    r.setScale(face * sx, 1);
     const L = this.legs;
     // legs pivot at the feet: a small rotation reads as a skew/step and carries the hip sideways
     L.setPosition(p.legDx, p.legDy).setScale(base * p.legSX, base * p.legSY).setRotation(p.legSkew);

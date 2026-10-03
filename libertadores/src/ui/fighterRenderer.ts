@@ -14,6 +14,8 @@ export interface DrawOpts {
   xOffset?: number;
   yOffset?: number;
   pose?: AnimName;
+  /** horizontal squash (0..1) used by the turn-around animation */
+  xScale?: number;
 }
 
 type Gfx = Phaser.GameObjects.Graphics;
@@ -1208,7 +1210,7 @@ export function drawFighter(g: Gfx, f: FighterView, opts: DrawOpts = {}): void {
   const anim = opts.pose ?? f.anim;
   G = g;
   const sc = (opts.scale ?? 1) * art.height;
-  SC = sc; FC = f.facing;
+  SC = sc; FC = f.facing * (opts.xScale ?? 1);
   OX = f.x + (opts.xOffset ?? 0); OY = f.y + (opts.yOffset ?? 0);
   AL = opts.alpha ?? 1;
   FL = Math.max(f.hitFlash > 0 ? Math.min(1, f.hitFlash > 1 ? f.hitFlash / 6 : f.hitFlash) : 0, opts.flash ?? 0);
