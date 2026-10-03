@@ -153,7 +153,7 @@ def main():
         print(f"[{cid}] {prompt}", flush=True)
         paths = []
         seed, made, tries = a.seed0, 0, 0
-        while made < a.n and tries < a.n * 6:
+        while made < a.n and tries < a.n * 8:
             tries += 1
             g = torch.Generator("cpu").manual_seed(seed)
             t1 = time.time()
@@ -168,8 +168,11 @@ def main():
                 img.save(d / f"raw_{seed}.png")
                 p = d / f"cand_{seed}.png"; place_on_canvas(cut).save(p); paths.append(p); made += 1
             seed += 1
-        contact_sheet(paths, d / "sheet.png")
-        print(f"  -> {d/'sheet.png'}", flush=True)
+        if paths:
+            contact_sheet(paths, d / "sheet.png")
+            print(f"  -> {d/'sheet.png'}", flush=True)
+        else:
+            print(f"  -> NO usable candidates for {cid} (all cropped); rerun with another --seed0", flush=True)
 
 
 if __name__ == "__main__":
