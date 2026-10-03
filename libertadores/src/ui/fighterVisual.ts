@@ -36,6 +36,23 @@ function poseFor(anim: AnimName): Pose {
   }
 }
 
+/** Rim-light texture key. WebGL tints the normal texture (tint fill); Canvas has no tint, so a coloured silhouette is baked once. */
+function rimTexture(scene: Phaser.Scene, key: string, color: number): string {
+  if (scene.game.renderer.type !== Phaser.CANVAS) return key;
+  const q = color & 0xf8f8f8, k = `${key}__rim${q.toString(16)}`;
+  if (scene.textures.exists(k)) return k;
+  try {
+    const src = scene.textures.get(key).getSourceImage() as CanvasImageSource & { width: number; height: number };
+    const cv = document.createElement('canvas'); cv.width = src.width; cv.height = src.height;
+    const c = cv.getContext('2d');
+    if (!c) return key;
+    c.drawImage(src, 0, 0); c.globalCompositeOperation = 'source-in';
+    c.fillStyle = `#${q.toString(16).padStart(6, '0')}`; c.fillRect(0, 0, cv.width, cv.height);
+    scene.textures.addCanvas(k, cv);
+    return k;
+  } catch { return key; }
+}
+
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const easeOut = (t: number) => 1 - (1 - t) * (1 - t);
 const smooth = (t: number) => t * t * (3 - 2 * t);
@@ -172,10 +189,16 @@ function crescent(g: Phaser.GameObjects.Graphics, cx: number, cy: number, r: num
 export class FighterVisual {
   private img: Phaser.GameObjects.Image | null = null;
   private rig: PuppetRig | null = null;
+  private rimImg: Phaser.GameObjects.Image | null = null;
+  private rimRig: PuppetRig | null = null;
+  /** 2.5D lighting (set by Depth25D): world x of the dominant light, strength 0..1 (0 = off) and its color. */
+  private lightX = 0; private lightStr = 0; private lightColor = 0xffa050;
   constructor(
     private scene: Phaser.Scene, private parent: Phaser.GameObjects.Container | null, readonly char: CharacterDef,
     private o: { after?: Phaser.GameObjects.GameObject; depth?: number } = {},
   ) {}
+
+  setLight(x: number, strength: number, color: number): void { this.lightX = x; this.lightStr = strength; this.lightColor = color; }
 
   get sprite(): boolean { return hasSprites(this.char.id); }
 
@@ -194,6 +217,19 @@ export class FighterVisual {
     return this.img;
   }
 
+  private placeBehind(go: Phaser.GameObjects.Container | Phaser.GameObjects.Image, main: Phaser.GameObjects.Container | Phaser.GameObjects.Image): void {
+    if (this.parent) this.parent.addAt(go, Math.max(0, this.parent.getIndex(main)));
+    else go.setDepth((this.o.depth ?? 0) - 0.01);
+  }
+  private ensureRimRig(main: PuppetRig): PuppetRig {
+    if (!this.rimRig) { this.rimRig = new PuppetRig(this.scene); this.placeBehind(this.rimRig.root, main.root); }
+    return this.rimRig;
+  }
+  private ensureRimImg(main: Phaser.GameObjects.Image): Phaser.GameObjects.Image {
+    if (!this.rimImg) { this.rimImg = this.scene.add.image(0, 0, main.texture.key).setOrigin(0.5, 1); this.placeBehind(this.rimImg, main); }
+    return this.rimImg;
+  }
+
   private ensureRig(): PuppetRig {
     if (!this.rig) { this.rig = new PuppetRig(this.scene); this.place(this.rig.root); }
     return this.rig;
@@ -209,7 +245,7 @@ export class FighterVisual {
   /** `g` is the shared graphics layer (shadow, auras, trails; also used for the procedural fallback). */
   draw(g: Phaser.GameObjects.Graphics, f: FighterView, o: DrawOpts = {}): void {
     if (!this.sprite) { this.img?.setVisible(false); this.rig?.hide(); drawFighter(g, f, o); return; }
-    if (f.hidden) { this.img?.setVisible(false); this.rig?.hide(); return; }
+    if (f.hidden) { this.hide(); return; }
     const want = o.pose ?? f.anim;
     const wantPose = poseFor(want);
     const pose = this.resolve(wantPose);
@@ -219,21 +255,52 @@ export class FighterVisual {
     const ox = o.xOffset ?? 0, oy = o.yOffset ?? 0;
     const alpha = (o.alpha ?? 1) * (want === 'evade' ? 0.4 : 1);
     const flash = (o.flash ?? 0) > 0.05;
+    const lit = this.lightStr > 0.03;
+    const toward = this.lightX >= f.x ? 1 : -1;
+    const rimA = alpha * Math.min(0.6, 0.25 + this.lightStr * 0.45);
+    const rimDx = toward * 2.5;
 
     if (pose === 'idle') {
       // only idle art available (or asked for): paper-puppet it
       this.img?.setVisible(false);
       const p = puppetFor(f, want);
-      this.ensureRig().apply(this.scene, texKey(this.char.id, 'idle'), base, f.x + ox, f.y + oy, face, alpha, flash, p);
+      this.rimImg?.setVisible(false);
+      const rig = this.ensureRig();
+      rig.apply(this.scene, texKey(this.char.id, 'idle'), base, f.x + ox, f.y + oy, face, alpha, flash, p);
+      if (lit && !flash) {
+        const rk = rimTexture(this.scene, texKey(this.char.id, 'idle'), this.lightColor);
+        this.ensureRimRig(rig).apply(this.scene, rk, base, f.x + ox + rimDx, f.y + oy - 1, face, rimA, false, p, rk === texKey(this.char.id, 'idle') ? this.lightColor : -1);
+      }
+      else this.rimRig?.hide();
     } else {
-      this.rig?.hide();
-      this.drawWhole(this.ensure(), f, o, want, wantPose, pose, base, alpha, flash);
+      this.rig?.hide(); this.rimRig?.hide();
+      const img = this.ensure();
+      this.drawWhole(img, f, o, want, wantPose, pose, base, alpha, flash);
+      if (lit && !flash) {
+        const rim = this.ensureRimImg(img);
+        const rk = rimTexture(this.scene, img.texture.key, this.lightColor);
+        if (rim.texture.key !== rk) rim.setTexture(rk);
+        rim.setPosition(img.x + rimDx, img.y - 1).setScale(img.scaleX, img.scaleY).setRotation(img.rotation).setAlpha(rimA).setVisible(true);
+        if (rk === img.texture.key) rim.setTintFill(this.lightColor);
+      } else this.rimImg?.setVisible(false);
     }
 
     // shadow, aura and slash trail go on the shared graphics layer
     if (o.shadow !== false) {
       const air = clamp((ARENA.ground - f.y) / 260, 0, 1);
-      g.fillStyle(0x000000, 0.4 * (1 - air * 0.6) * (o.alpha ?? 1)); g.fillEllipse(f.x + ox, ARENA.ground + 4, 120 * (1 - air * 0.4), 18);
+      const sa = (1 - air * 0.6) * (o.alpha ?? 1);
+      if (lit) {
+        // projected shadow: a flattened silhouette stretched away from the dominant light
+        const away = -toward, len = (46 + 70 * (1 - this.lightStr * 0.5)) * f.char.art.height * (1 - air * 0.5), x0 = f.x + ox, gy = ARENA.ground + 3;
+        const ex = x0 + away * len, w0 = 30 * (1 - air * 0.3), w1 = 14;
+        g.fillStyle(0x000000, 0.2 * sa); g.fillEllipse(x0, gy + 1, 110 * (1 - air * 0.4), 17);
+        for (let k = 0; k < 2; k++) {
+          const e = k * 4;
+          g.fillStyle(0x000000, (k ? 0.16 : 0.09) * sa);
+          g.fillPoints([{ x: x0 - w0 + e, y: gy - 3 + e * 0.3 }, { x: x0 + w0 - e, y: gy + 5 }, { x: ex + away * 6 + w1 - e, y: gy + 3 }, { x: ex + away * 6 - w1 + e, y: gy - 4 }], true);
+          g.fillEllipse(ex + away * 6, gy - 1, (30 - e * 2) , 10 - k * 2);
+        }
+      } else { g.fillStyle(0x000000, 0.4 * sa); g.fillEllipse(f.x + ox, ARENA.ground + 4, 120 * (1 - air * 0.4), 18); }
     }
     if (f.buffs.length) {
       const c = f.char.art.palette.aura;
@@ -306,6 +373,6 @@ export class FighterVisual {
     if (flash) img.setTintFill(0xffffff); else img.clearTint();
   }
 
-  hide(): void { this.img?.setVisible(false); this.rig?.hide(); }
-  destroy(): void { this.img?.destroy(); this.img = null; this.rig?.destroy(); this.rig = null; }
+  hide(): void { this.img?.setVisible(false); this.rig?.hide(); this.rimImg?.setVisible(false); this.rimRig?.hide(); }
+  destroy(): void { this.img?.destroy(); this.img = null; this.rig?.destroy(); this.rig = null; this.rimImg?.destroy(); this.rimImg = null; this.rimRig?.destroy(); this.rimRig = null; }
 }

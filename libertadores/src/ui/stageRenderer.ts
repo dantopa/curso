@@ -6,6 +6,7 @@ import {
   layerPad, mix, paintIsland, rng, css,
 } from './stageArt';
 import type { LayerDef, LayerName } from './stageArt';
+import { blurCanvas } from './depth25d';
 
 type G = Phaser.GameObjects.Graphics;
 type Dyn = (g: G, t: number, dt: number) => void;
@@ -57,6 +58,11 @@ const FOG_ALPHA: Record<StageKind, number> = {
   llanos: 0.22, andes: 0.4, tiwanaku: 0.2, citadel: 0.5, battlefield: 0.4, jungle: 0.4, plaza: 0.25, pampa: 0.14, dimension: 0.28,
 };
 
+/** Depth-of-field: blur radius (px) and atmospheric haze baked into each far layer when the 2.5D effects are on. */
+const DOF: Partial<Record<LayerName, { blur: number; haze: number }>> = {
+  sky: { blur: 5, haze: 0.1 }, far: { blur: 6.5, haze: 0.26 }, mid: { blur: 4, haze: 0.16 }, near: { blur: 1.8, haze: 0.07 },
+};
+
 const PART_COUNT: Record<Ambience, number> = { rain: 140, snow: 140, embers: 80, dust: 70, ash: 100, fireflies: 36, none: 0 };
 
 export class StageRenderer {
@@ -86,9 +92,11 @@ export class StageRenderer {
   private boltFlash = 0;
   private dead = false;
   private rainLean = -4;
+  private soft = false;
 
-  constructor(scene: Phaser.Scene, stage: StageDef, depthBase = -100) {
+  constructor(scene: Phaser.Scene, stage: StageDef, depthBase = -100, opts: { soft?: boolean } = {}) {
     this.scene = scene;
+    this.soft = !!opts.soft;
     this.stage = stage;
     this.depthBase = depthBase;
     this.R = rng(hashStr(stage.id) ^ 0x9e3779b9);
@@ -111,7 +119,8 @@ export class StageRenderer {
         ctx.fillStyle = css(stage.sky[0]); ctx.fillRect(0, 0, w, h);
       }
       const key = `stg_${this.uid}_${def.name}`;
-      scene.textures.addCanvas(key, cv);
+      const dof = this.soft ? DOF[def.name] : undefined;
+      scene.textures.addCanvas(key, dof ? this.softenLayer(cv, dof.blur, dof.haze) : cv);
       this.texKeys.push(key);
       const box = scene.add.container(0, 0);
       box.setScrollFactor(0);
@@ -135,6 +144,28 @@ export class StageRenderer {
     this.objs.push(this.flash, this.light, this.vig, this.overlay);
     this.initParticles();
     this.setCamera(GAME_W / 2, 1);
+  }
+
+  /** Blur + haze a painted layer (same result in Canvas and WebGL: it is baked into the texture). */
+  private softenLayer(cv: HTMLCanvasElement, blur: number, haze: number): HTMLCanvasElement {
+    try {
+      const out = blurCanvas(cv, blur);
+      const c = out.getContext('2d');
+      if (c) {
+        c.globalCompositeOperation = 'source-atop';
+        c.fillStyle = css(mix(this.stage.fog, 0x0a1020, 0.55), haze);
+        c.fillRect(0, 0, out.width, out.height);
+      }
+      return out;
+    } catch { return cv; }
+  }
+
+  /** Screen position of a point given in a parallax layer's own coordinates (used to place light pools). */
+  layerPoint(name: LayerName, x: number, y: number, out: { x: number; y: number }): boolean {
+    const L = this.layers[name];
+    if (!L) return false;
+    out.x = L.box.x + x * L.box.scaleX; out.y = L.box.y + y * L.box.scaleY;
+    return true;
   }
 
   get overlayDepth(): number { return this._overlayDepth; }
@@ -212,7 +243,13 @@ export class StageRenderer {
   private dynFor(name: LayerName): Layer | undefined {
     const L = this.layers[name];
     if (!L) return undefined;
-    if (!L.dyn) { L.dyn = this.scene.add.graphics().setScrollFactor(0); L.box.add(L.dyn); }
+    if (!L.dyn) {
+      L.dyn = this.scene.add.graphics().setScrollFactor(0); L.box.add(L.dyn);
+      const dof = this.soft ? DOF[name] : undefined;
+      if (dof && dof.blur > 3 && this.scene.game.renderer.type === Phaser.WEBGL) { // WebGL only: soften flames/banners of distant layers
+        try { L.dyn.preFX?.addBlur(0, 1, 1, dof.blur * 0.3); } catch { /* FX unavailable */ }
+      }
+    }
     return L;
   }
 

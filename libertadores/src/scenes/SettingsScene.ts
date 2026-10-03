@@ -39,6 +39,7 @@ export class SettingsScene extends Phaser.Scene {
         onLeft: () => { s.touch = touchModes[(touchModes.indexOf(s.touch) + 2) % 3]; saveSettings(); },
         onRight: () => { s.touch = touchModes[(touchModes.indexOf(s.touch) + 1) % 3]; saveSettings(); } },
       { label: 'Sacudida de pantalla', value: () => (s.shake ? 'Sí' : 'No'), onLeft: () => { s.shake = !s.shake; saveSettings(); }, onRight: () => { s.shake = !s.shake; saveSettings(); } },
+      { label: 'Efectos 2.5D', value: () => (s.fx25d ? 'Sí' : 'No'), onLeft: () => { s.fx25d = !s.fx25d; saveSettings(); }, onRight: () => { s.fx25d = !s.fx25d; saveSettings(); } },
       { label: 'Desbloquear remates secundarios', value: () => (s.unlockAll ? 'Sí' : 'No'), onLeft: () => { s.unlockAll = !s.unlockAll; saveSettings(); }, onRight: () => { s.unlockAll = !s.unlockAll; saveSettings(); } },
       { label: 'Configurar controles', onSelect: () => fadeTo(this, 'Remap') },
       { label: 'Borrar progreso', onSelect: () => { resetProgress(); this.say('Progreso borrado.'); } },

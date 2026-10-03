@@ -69,7 +69,7 @@ export class PuppetRig {
   }
 
   /** Apply a pose. `base` is world-pixels per texel. */
-  apply(scene: Phaser.Scene, key: string, base: number, x: number, y: number, face: number, alpha: number, flash: boolean, p: PuppetPose): void {
+  apply(scene: Phaser.Scene, key: string, base: number, x: number, y: number, face: number, alpha: number, flash: boolean, p: PuppetPose, fill = -1): void {
     this.bind(scene, key, base);
     const r = this.root;
     r.setVisible(true);
@@ -90,7 +90,8 @@ export class PuppetRig {
     this.torso.setScale(base);
     this.head.setScale(base).setPosition(p.headDx, -this.neckRel + p.headDy).setRotation(p.headRot);
     L.setAlpha(alpha); this.torso.setAlpha(alpha); this.head.setAlpha(alpha);
-    if (flash) { L.setTintFill(0xffffff); this.torso.setTintFill(0xffffff); this.head.setTintFill(0xffffff); }
+    if (fill >= 0) { L.setTintFill(fill); this.torso.setTintFill(fill); this.head.setTintFill(fill); }
+    else if (flash) { L.setTintFill(0xffffff); this.torso.setTintFill(0xffffff); this.head.setTintFill(0xffffff); }
     else { L.clearTint(); this.torso.clearTint(); this.head.clearTint(); }
   }
 

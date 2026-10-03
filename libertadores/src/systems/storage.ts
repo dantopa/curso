@@ -29,6 +29,7 @@ export interface Settings {
   timer: 0 | 60 | 99;
   touch: 'auto' | 'on' | 'off';
   shake: boolean;
+  fx25d: boolean;
   unlockAll: boolean;
   stageId: string;
   p1: KeyMap; p2: KeyMap;
@@ -38,7 +39,7 @@ export interface Progress { stats: Record<string, CharStat>; tournament: Tournam
 
 export const DEFAULT_SETTINGS: Settings = {
   master: 0.8, sfx: 0.9, music: 0.55, voice: 0.8, difficulty: 'fighter', roundsToWin: 2, timer: 99,
-  touch: 'auto', shake: true, unlockAll: false, stageId: 'llanos', p1: { ...DEFAULT_P1 }, p2: { ...DEFAULT_P2 },
+  touch: 'auto', shake: true, fx25d: true, unlockAll: false, stageId: 'llanos', p1: { ...DEFAULT_P1 }, p2: { ...DEFAULT_P2 },
 };
 const KEY_S = 'libertadores.settings.v1';
 const KEY_P = 'libertadores.progress.v1';

@@ -10,6 +10,7 @@ import { Effects } from '../systems/effects';
 import { Hud } from '../ui/hud';
 import { FatalityPlayer } from '../ui/fatalityPlayer';
 import { FighterVisual } from '../ui/fighterVisual';
+import { Depth25D } from '../ui/depth25d';
 import { drawGhost, drawProjectile } from '../ui/projectileRenderer';
 import { COLORS, CSS, MenuList, fadeIn, fadeTo, navFrom, panel, txt } from '../ui/theme';
 import { arrows } from './SelectScene';
@@ -51,6 +52,12 @@ export class FightScene extends Phaser.Scene {
   private usedSecondary = false;
   private fatalityName = '';
   private ghostAge = [0, 0];
+  // 2.5D package
+  private fx25 = false;
+  private d25: Depth25D | null = null;
+  private punch = 0;      // extra zoom from big moments, eases back to 0
+  private intro = 0;      // initial push-in
+  private tilt = 0; private tiltAmp = 0; private tiltHold = 0;
 
   constructor() { super('Fight'); }
   init(d: { cfg: FightConfig }): void {
@@ -59,6 +66,7 @@ export class FightScene extends Phaser.Scene {
     this.pauseObjs = []; this.pauseMenu = undefined; this.fatPlayer = null; this.fatDone = false; this.ended = false;
     this.flashAlpha = 0; this.usedFatality = false; this.usedSecondary = false; this.fatalityName = '';
     this.ghostAge = [0, 0]; this.ai = [null, null]; this.fx = new Effects();
+    this.d25 = null; this.punch = 0; this.tilt = 0; this.tiltAmp = 0; this.tiltHold = 0;
   }
 
   create(): void {
@@ -72,12 +80,14 @@ export class FightScene extends Phaser.Scene {
       seed: Math.floor(Math.random() * 1e9),
     });
     const stageDef = getStage(cfg.stageId);
-    this.stage = new StageRenderer(this, stageDef, -100);
+    this.fx25 = getSettings().fx25d !== false;
+    this.stage = new StageRenderer(this, stageDef, -100, { soft: this.fx25 });
     this.world = this.add.container(0, 0).setDepth(10);
     this.gGhost = this.add.graphics(); this.gFighter = this.add.graphics();
     this.gProj = this.add.graphics(); this.gFx = this.add.graphics();
     this.world.add([this.gGhost, this.gFighter, this.gProj, this.gFx]);
     this.vis = [new FighterVisual(this, this.world, a, { after: this.gFighter }), new FighterVisual(this, this.world, b, { after: this.gFighter })];
+    if (this.fx25) { try { this.d25 = new Depth25D(this, this.stage, this.world); this.intro = 0.08; } catch { this.d25 = null; } }
     this.flash = this.add.graphics().setDepth(90);
     this.hud = new Hud(this, [a, b], [cfg.p1Human, cfg.p2Human], cfg.label);
     if (!cfg.p1Human) this.ai[0] = new AIController(0, cfg.difficulty, 11);
@@ -87,7 +97,7 @@ export class FightScene extends Phaser.Scene {
     const s = getSettings();
     const showTouch = s.touch === 'on' || (s.touch === 'auto' && isTouchDevice());
     touch.show(showTouch);
-    this.events.once('shutdown', () => { input.capture = false; touch.show(false); this.stage.destroy(); AudioManager.get().stopMusic(0.4); });
+    this.events.once('shutdown', () => { this.d25?.destroy(); this.cameras.main.setRotation(0).setZoom(1); input.capture = false; touch.show(false); this.stage.destroy(); AudioManager.get().stopMusic(0.4); });
     const tracks: MusicTrack[] = ['fight1', 'fight2', 'fight3'];
     AudioManager.get().playMusic(tracks[Math.floor(Math.random() * 3)]);
     this.input.keyboard?.on('keydown', (e: KeyboardEvent) => this.onKey(e));
@@ -108,6 +118,7 @@ export class FightScene extends Phaser.Scene {
   private togglePause(): void {
     if (this.fatPlayer || this.sim.phase === 'fatality') return;
     this.paused = !this.paused;
+    if (this.paused) { this.tilt = 0; this.tiltAmp = 0; this.tiltHold = 0; this.cameras.main.setRotation(0).setZoom(1); }
     this.pauseObjs.forEach((o) => o.destroy()); this.pauseObjs = [];
     this.pauseMenu?.destroy(); this.pauseMenu = undefined;
     AudioManager.get().setMusicDuck(this.paused);
@@ -177,8 +188,9 @@ export class FightScene extends Phaser.Scene {
       if (this.fatPlayer) return;
     }
     this.fx.update();
-    this.updateCamera();
+    this.updateCamera(delta);
     this.render();
+    this.d25?.update(time, delta, this.sim.fighters, this.vis);
     this.hud.update(this.sim);
     this.flashAlpha = Math.max(0, this.flashAlpha - 0.03);
     this.flash.clear();
@@ -214,6 +226,7 @@ export class FightScene extends Phaser.Scene {
           this.fx.hit(e.x, e.y, e.strength, e.color ?? 0xffffff);
           au.sfx(e.strength === 'light' ? 'lightHit' : 'heavyHit', { pan: this.pan(e.x), intensity: e.strength === 'special' ? 1.3 : 1 });
           this.shake(e.strength === 'light' ? 60 : 110, e.strength === 'light' ? 0.0015 : e.strength === 'heavy' ? 0.004 : 0.007);
+          if (e.strength !== 'light') this.kick(e.strength === 'heavy' ? 0.02 : 0.035, 0);
           break;
         case 'block': this.fx.block(e.x, e.y); au.sfx('block', { pan: this.pan(e.x) }); break;
         case 'whoosh': au.sfx(e.heavy ? 'whooshHeavy' : 'whoosh', { pan: this.pan(s.fighters[e.by].x) }); break;
@@ -230,8 +243,8 @@ export class FightScene extends Phaser.Scene {
         case 'teleport': au.sfx('teleport'); this.fx.burst(s.fighters[e.by].x, s.fighters[e.by].y - 90, e.color); break;
         case 'clash': au.sfx('clash'); this.fx.hit(e.x, e.y, 'heavy', 0xffe9a0); break;
         case 'shield': au.sfx('shield'); this.fx.block(e.x, e.y); break;
-        case 'counter': au.sfx('counter'); this.fx.burst(e.x, e.y, e.color); this.flashColor = e.color; this.flashAlpha = 0.35; this.shake(160, 0.006); break;
-        case 'ultimate': au.sfx('ultimate'); this.flashColor = e.color; this.flashAlpha = 0.9; this.shake(500, 0.008);
+        case 'counter': au.sfx('counter'); this.fx.burst(e.x, e.y, e.color); this.flashColor = e.color; this.flashAlpha = 0.35; this.shake(160, 0.006); this.kick(0.055, 0); break;
+        case 'ultimate': au.sfx('ultimate'); this.flashColor = e.color; this.flashAlpha = 0.9; this.shake(500, 0.008); this.kick(0.1, 1.2);
           this.hud.say('¡DEFINITIVO!', s.fighters[e.by].char.specials[s.fighters[e.by].char.ultimateSlot].name.toUpperCase(), '#ffd070', 64);
           break;
         case 'land': {
@@ -242,7 +255,7 @@ export class FightScene extends Phaser.Scene {
         }
         case 'roundStart': this.hud.say(`RONDA ${e.round}`, `${s.fighters[0].char.name}  vs  ${s.fighters[1].char.name}`, CSS.goldLight, 90); au.sfx('roundStart'); au.speak(`Ronda ${e.round}`); break;
         case 'fight': this.hud.say('¡PELEA!', '', '#ff5a3a', 130); au.sfx('fight'); au.speak('¡Pelea!', { rate: 1.1 }); break;
-        case 'ko': this.hud.say('K.O.', '', '#ff3a2a', 160); au.sfx('ko'); au.speak('K O'); this.shake(500, 0.012); this.flashColor = 0xffffff; this.flashAlpha = 0.6; break;
+        case 'ko': this.hud.say('K.O.', '', '#ff3a2a', 160); au.sfx('ko'); au.speak('K O'); this.shake(500, 0.012); this.flashColor = 0xffffff; this.flashAlpha = 0.6; this.kick(0.13, 1.0); break;
         case 'timeout': this.hud.say('TIEMPO', '', CSS.goldLight, 100); au.speak('Tiempo'); break;
         case 'roundEnd': {
           if (e.winner === null) this.hud.say('EMPATE', '', CSS.white, 90);
@@ -285,6 +298,7 @@ export class FightScene extends Phaser.Scene {
     this.fatalityName = def.name;
     this.fatPlayer = new FatalityPlayer(this, def, s.fighters[winner], s.fighters[1 - winner as 0 | 1], secondary, Math.floor(Math.random() * 1e6));
     this.cameras.main.resetFX();
+    this.tilt = 0; this.tiltAmp = 0; this.tiltHold = 0; this.cameras.main.setRotation(0).setZoom(1);
   }
 
   private endFatality(): void {
@@ -319,17 +333,43 @@ export class FightScene extends Phaser.Scene {
   }
 
   /* -------------------------------------------------------------- render */
-  private updateCamera(): void {
+  /** Zoom punch (+ optional brief tilt in degrees, which also tilts the HUD, so it is only used for the biggest moments). */
+  private kick(zoom: number, tiltDeg: number): void {
+    if (!this.fx25) return;
+    this.punch = Math.max(this.punch, zoom);
+    if (tiltDeg > 0 && !this.paused) {
+      this.tiltAmp = (Math.random() < 0.5 ? -1 : 1) * Math.min(1.5, tiltDeg) * Math.PI / 180;
+      this.tiltHold = 110;
+    }
+  }
+
+  private updateCamera(delta = 16.7): void {
     const [a, b] = this.sim.fighters;
+    const k60 = Math.min(3, delta / 16.667);
     const mid = (a.x + b.x) / 2, dist = Math.abs(a.x - b.x);
-    const tz = Phaser.Math.Clamp(1.2 - (dist - 180) / 1400, 1.0, 1.2);
+    // slight cinematic push-in (only with 2.5D effects on); the punch/intro are applied on top of the follow zoom
+    const tz = Phaser.Math.Clamp(1.2 - (dist - 180) / 1400, 1.0, 1.2) + (this.fx25 ? 0.025 : 0);
     this.camZ += (tz - this.camZ) * 0.08;
-    const half = GAME_W / 2 / this.camZ;
+    let z = this.camZ;
+    if (this.fx25) {
+      this.punch *= Math.pow(0.9, k60); this.intro *= Math.pow(0.975, k60);
+      if (this.punch < 0.0005) this.punch = 0;
+      z += this.punch + this.intro;
+      // tilt: ease toward the target, hold briefly, ease back; the main camera is zoomed just enough to hide the corners
+      let target = 0;
+      if (this.tiltHold > 0) { this.tiltHold -= delta; target = this.tiltAmp; }
+      this.tilt += (target - this.tilt) * Math.min(1, (target === 0 ? 0.09 : 0.35) * k60);
+      if (Math.abs(this.tilt) < 0.0003 && target === 0) this.tilt = 0;
+      const cam = this.cameras.main;
+      cam.setRotation(this.tilt); cam.setZoom(1 + Math.abs(this.tilt) * 1.85);
+    }
+    const half = GAME_W / 2 / z;
     const tx = Phaser.Math.Clamp(mid, half, GAME_W - half);
     this.camX += (tx - this.camX) * 0.12;
-    this.world.setScale(this.camZ);
-    this.world.setPosition(GAME_W / 2 - this.camZ * this.camX, GAME_H / 2 - this.camZ * GAME_H / 2);
-    this.stage.setCamera(this.camX, this.camZ);
+    this.world.setScale(z);
+    this.world.setPosition(GAME_W / 2 - z * this.camX, GAME_H / 2 - z * GAME_H / 2);
+    this.stage.setCamera(this.camX, z);
+    this.d25?.setCamera(this.camX, z);
   }
 
   private render(): void {
