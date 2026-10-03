@@ -63,7 +63,7 @@
    "weapon": "sword",
    "build": "normal"
   },
-  "desc": "Toussaint Louverture, Haitian revolutionary general, dark brown skin, black bicorne hat with white feather, navy blue coat with gold leaf embroidery, red collar, white cravat, red sash, gold epaulettes, black boots, straight sword"
+  "desc": "distant full length view, small figure, Toussaint Louverture, Haitian revolutionary general, dark brown skin, black bicorne hat with white feather, navy blue coat with gold leaf embroidery, red collar, white cravat, red sash, gold epaulettes, black boots, straight sword"
  },
  "hidalgo": {
   "name": "Miguel Hidalgo",
@@ -115,7 +115,7 @@
    "weapon": "facon",
    "build": "slim"
   },
-  "desc": "standing on foot, no horse, Jose Artigas, Uruguayan gaucho caudillo, dark hair, sideburns, black tricorn hat, patterned brown poncho over dark blue jacket, red neckerchief, baggy gaucho trousers, riding boots with spurs, short facon knife"
+  "desc": "Jose Artigas standing on foot, Uruguayan caudillo, dark hair, sideburns, black tricorn hat, dark blue military jacket, red neckerchief, brown poncho over shoulder, trousers, black boots, short facon knife in hand"
  },
  "miranda": {
   "name": "Francisco de Miranda",
@@ -128,7 +128,7 @@
    "weapon": "pistolSword",
    "build": "slim"
   },
-  "desc": "Francisco de Miranda, older Venezuelan general, long swept-back grey white hair, clean shaven, dark navy and tan military coat with gold trim, red waistcoat, tricorn hat, holding a flintlock pistol and a sword"
+  "desc": "distant full length view, small figure, Francisco de Miranda, older Venezuelan general, long swept-back grey white hair, clean shaven, dark navy and tan military coat with gold trim, red waistcoat, tricorn hat, holding a flintlock pistol and a sword"
  },
  "guemes": {
   "name": "Martín Miguel de Güemes",

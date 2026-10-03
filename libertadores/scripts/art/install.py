@@ -20,6 +20,25 @@ for pick in a.picks:
     im = Image.open(f'{a.src}/{cid}/cand_{seed}.png').convert('RGBA')
     if flip:
         im = im.transpose(Image.FLIP_LEFT_RIGHT)
+    # drop detached fragments (stray blades, debris): keep only the largest connected blob of the alpha mask
+    import numpy as np
+    from collections import deque
+    A = np.asarray(im.getchannel('A'))
+    small = Image.fromarray(A).resize((A.shape[1] // 4, A.shape[0] // 4))
+    m = np.asarray(small) > 64
+    lab = np.zeros(m.shape, np.int32); best, best_n, cur = 0, 0, 0
+    for y0, x0 in zip(*np.nonzero(m)):
+        if lab[y0, x0]: continue
+        cur += 1; n = 0; q = deque([(y0, x0)]); lab[y0, x0] = cur
+        while q:
+            y, x = q.popleft(); n += 1
+            for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1)):
+                yy, xx = y + dy, x + dx
+                if 0 <= yy < m.shape[0] and 0 <= xx < m.shape[1] and m[yy, xx] and not lab[yy, xx]:
+                    lab[yy, xx] = cur; q.append((yy, xx))
+        if n > best_n: best, best_n = cur, n
+    keep = Image.fromarray(((lab == best) * 255).astype('uint8')).resize(im.size).filter(ImageFilter.MaxFilter(9))
+    im.putalpha(Image.fromarray(np.minimum(A, np.asarray(keep)).astype('uint8')))
     rgb, alpha = im.convert('RGB'), im.getchannel('A')
     rgb = ImageEnhance.Color(rgb).enhance(0.9)
     rgb = ImageEnhance.Contrast(rgb).enhance(1.1)
