@@ -30,8 +30,8 @@ CANVAS = 1024      # output canvas
 CHAR_H = 820       # px of full figure (hat to boots) in a standing idle on the output canvas
 GROUND_Y = 1000
 CENTER_X = 512
-FIG_OVER_NOSE = 1.205   # full figure height (hat..boot sole) / (nose..ankle) measured on the idle painting
-FOOT_OFF = 0.0625       # boot sole below ankle keypoint, in units of (nose..ankle)
+FIG_OVER_NOSE = 1.35    # generated figure height (hat top..boot sole) / H, H = (ankle_mid_y - nose_y) of the idle skeleton; measured on the SDXL output
+FOOT_OFF = 0.13         # boot sole below the lowest ankle keypoint, in units of H (measured)
 
 # ---------------------------------------------------------------- OpenPose drawing
 LIMBS = [(1, 2), (1, 5), (2, 3), (3, 4), (5, 6), (6, 7), (1, 8), (8, 9), (9, 10), (1, 11), (11, 12), (12, 13),
@@ -121,9 +121,9 @@ def skel_metrics(kps):
 
 
 # ---------------------------------------------------------------- pipeline
-PROMPT = ("dark cinematic oil painting of Jose de San Martin, Argentine general, full body, side view facing right, "
+PROMPT = ("dark moody cinematic oil painting, muted colors, Jose de San Martin, Argentine general, full body, side view facing right, "
           "dark wavy hair, thick sideburns, black bicorne hat, dark blue military coat with gold embroidery, "
-          "large gold epaulettes, red collar, white trousers, black knee boots, curved sabre in his hand, "
+          "large gold epaulettes, red collar, white trousers, black knee boots, holding a long curved sabre with a long blade, "
           "plain flat grey background, highly detailed")
 NEG = "cropped, close-up, text, watermark, extra limbs, deformed hands, blurry, cartoon, anime, multiple people, scenery"
 
@@ -139,48 +139,68 @@ def grey_ref(path, size=GEN):
     return sq
 
 
+def make_embeds(ref, prompt, path, use_ip=True):
+    """Phase 1 (run in a throw-away subprocess so its ~7 GB of text encoders / CLIP-H are returned to the OS):
+    prompt embeds + IP-Adapter-plus image embeds, saved to `path`."""
+    import torch
+    from diffusers import StableDiffusionXLPipeline
+    torch.set_num_threads(4)
+    bf = torch.bfloat16
+    pipe = StableDiffusionXLPipeline.from_pretrained("stabilityai/sdxl-turbo", torch_dtype=bf, variant="fp16",
+                                                     unet=None, vae=None, low_cpu_mem_usage=True)
+    with torch.no_grad():
+        pe, _, ppe, _ = pipe.encode_prompt(prompt, device="cpu", num_images_per_prompt=1,
+                                           do_classifier_free_guidance=False)
+    d = {"pe": pe, "ppe": ppe}
+    del pipe
+    if use_ip:
+        from transformers import CLIPVisionModelWithProjection, CLIPImageProcessor
+        enc = CLIPVisionModelWithProjection.from_pretrained("h94/IP-Adapter", subfolder="models/image_encoder",
+                                                            torch_dtype=bf, low_cpu_mem_usage=True)
+        px = CLIPImageProcessor()(
+            grey_ref(ref), return_tensors="pt").pixel_values.to(bf)
+        with torch.no_grad():
+            d["ip"] = enc(px, output_hidden_states=True).hidden_states[-2][None, :]   # (1,1,257,1280)
+    torch.save(d, path)
+
+
 class Generator:
-    def __init__(self, ref, prompt=PROMPT, neg=NEG, ip_scale=0.7, cn_scale=0.9, mode="ip", threads=4):
-        import torch
+    def __init__(self, ref, prompt=PROMPT, ip_scale=0.7, cn_scale=0.9, mode="ip", threads=4, cache_dir="."):
+        import torch, hashlib, subprocess
         from diffusers import StableDiffusionXLControlNetPipeline, ControlNetModel
         torch.set_num_threads(threads)
         self.torch = torch
         bf = torch.bfloat16
         t0 = time.time()
+        key = hashlib.md5((prompt + str(os.path.getmtime(ref)) + str(ref) + mode).encode()).hexdigest()[:10]
+        ep = Path(cache_dir) / f".embeds_{key}.pt"
+        if not ep.exists():
+            subprocess.check_call([sys.executable, str(Path(__file__).resolve()), "--_embeds", str(ep),
+                                   "--ref", str(ref), "--prompt", prompt, "--mode", mode])
+        d = torch.load(ep)
+        self.pe, self.ppe, self.ip_embeds = d["pe"], d["ppe"], ([d["ip"]] if "ip" in d else None)
         cn = ControlNetModel.from_pretrained("xinsir/controlnet-openpose-sdxl-1.0", torch_dtype=bf,
                                              low_cpu_mem_usage=True)
-        try:
-            pipe = StableDiffusionXLControlNetPipeline.from_pretrained(
-                "stabilityai/sdxl-turbo", controlnet=cn, torch_dtype=bf, variant="fp16", low_cpu_mem_usage=True)
-        except Exception:
-            pipe = StableDiffusionXLControlNetPipeline.from_pretrained(
-                "stabilityai/sdxl-turbo", controlnet=cn, torch_dtype=bf, low_cpu_mem_usage=True)
+        none = dict(text_encoder=None, text_encoder_2=None, tokenizer=None, tokenizer_2=None)
+        pipe = StableDiffusionXLControlNetPipeline.from_pretrained(
+            "stabilityai/sdxl-turbo", controlnet=cn, torch_dtype=bf, variant="fp16", low_cpu_mem_usage=True, **none)
         pipe.set_progress_bar_config(disable=True)
         self.cn_scale = cn_scale
-        with torch.no_grad():
-            pe, npe, ppe, nppe = pipe.encode_prompt(prompt, device="cpu", num_images_per_prompt=1,
-                                                    do_classifier_free_guidance=False)
-        self.pe, self.ppe = pe, ppe
-        self.ip_embeds = None
         if mode == "ip":
-            from transformers import CLIPVisionModelWithProjection
-            enc = CLIPVisionModelWithProjection.from_pretrained(
-                "h94/IP-Adapter", subfolder="models/image_encoder", torch_dtype=bf, low_cpu_mem_usage=True)
-            pipe.image_encoder = enc
             pipe.load_ip_adapter("h94/IP-Adapter", subfolder="sdxl_models",
                                  weight_name="ip-adapter-plus_sdxl_vit-h.safetensors", image_encoder_folder=None)
             pipe.set_ip_adapter_scale(ip_scale)
-            with torch.no_grad():
-                self.ip_embeds = pipe.prepare_ip_adapter_image_embeds(
-                    [grey_ref(ref)], None, "cpu", 1, False)
-            pipe.image_encoder = None
-            del enc
-        # free text encoders (their output is cached)
-        pipe.text_encoder = None
-        pipe.text_encoder_2 = None
-        import gc; gc.collect()
         self.pipe = pipe
         self.load_s = time.time() - t0
+
+    def close(self):
+        import gc, ctypes
+        self.pipe = None
+        gc.collect()
+        try:
+            ctypes.CDLL("libc.so.6").malloc_trim(0)
+        except Exception:
+            pass
 
     def __call__(self, skel, seed, steps=5):
         torch = self.torch
@@ -222,15 +242,23 @@ def matte(img, kps, mode="auto"):
     else:
         a = _alpha(img, "u2net_human_seg")
         ai = _alpha(img, "isnet-general-use")
-        sw = sword_wrist(kps) if kps else None
-        if sw is not None:
-            H = skel_metrics(kps)[2] if skel_metrics(kps) else 500
-            yy, xx = np.mgrid[0:GEN, 0:GEN]
-            wx, wy = kps[sw]
-            disk = ((xx - wx) ** 2 + (yy - wy) ** 2) < (0.55 * H) ** 2
-            # only isnet pixels away from the feet (floor shadows) are admitted
-            a = np.where(disk, np.maximum(a, ai), a)
-    m = a > 100
+        mt = skel_metrics(kps) if kps else None
+        # human_seg alone drops chunks of coat/trousers; isnet is complete but sticks to the floor, so admit it
+        # only above the boot soles (lowest ankle + 0.05 H); everything below comes from human_seg.
+        cut = int(mt[1] + 0.05 * mt[2]) if mt else GEN
+        ai[cut:] = 0
+        a = np.maximum(a, ai)
+    # drop flat-grey background that the matte kept (gaps between arm and coat, floor smudge) except around the sabre
+    bg = np.median(np.concatenate([np.array(img.convert("RGB"))[0], np.array(img.convert("RGB"))[-1],
+                                   np.array(img.convert("RGB"))[:, 0], np.array(img.convert("RGB"))[:, -1]]), axis=0)
+    blur = np.array(img.convert("RGB").filter(ImageFilter.GaussianBlur(3))).astype(np.float32)
+    isbg = (np.abs(blur - bg).max(-1) < 50) & ((blur.max(-1) - blur.min(-1)) < 11)
+    sw0 = sword_wrist(kps) if kps else None
+    if sw0 is not None:
+        yy, xx = np.mgrid[0:GEN, 0:GEN]
+        isbg &= ~(((xx - kps[sw0][0]) ** 2 + (yy - kps[sw0][1]) ** 2) < (0.8 * (skel_metrics(kps)[2] if skel_metrics(kps) else 500)) ** 2)
+    bgopen = ndimage.binary_opening(isbg, iterations=3)
+    m = (a > 100) & ~bgopen
     lab, n = _components(m)
     if n == 0:
         return a
@@ -252,8 +280,17 @@ def matte(img, kps, mode="auto"):
         if ok:
             keep.add(i)
     final = np.isin(lab, list(keep))
+    mt = skel_metrics(kps) if kps else None
+    if mt:   # feet zone: strip thin floor-shadow lines (opening removes structures thinner than ~5 px)
+        y0 = int(mt[1] - 0.12 * mt[2])
+        op = ndimage.binary_opening(final, structure=np.ones((5, 5)))
+        final[y0:] = op[y0:]
+        xs_an = [kps[i][0] for i in (10, 13) if kps[i] is not None]
+        xl, xr = int(min(xs_an) - 0.07 * mt[2]), int(max(xs_an) + 0.30 * mt[2])
+        final[y0:, :max(xl, 0)] = False
+        final[y0:, xr:] = False
     # fill holes inside main body, soften
-    final = ndimage.binary_fill_holes(final)
+    final = ndimage.binary_fill_holes(final) & ~bgopen
     soft = Image.fromarray((final * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(1.0))
     soft = np.array(soft).astype(np.float32) / 255
     return (soft * 255).astype(np.uint8)
@@ -329,9 +366,10 @@ def sheets(frames, out):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--poses", required=True)
-    ap.add_argument("--out", required=True)
+    ap.add_argument("--poses", default=".")
+    ap.add_argument("--out", default="out")
     ap.add_argument("--seed", type=int, default=7)
+    ap.add_argument("--seed-per-frame", action="store_true", help="different seed per frame (avoids duplicated features when the body moves a lot; identity comes from IP-Adapter)")
     ap.add_argument("--steps", type=int, default=5)
     ap.add_argument("--ref", default=str(DEFAULT_REF))
     ap.add_argument("--ref-skeleton", default=None, help="JSON/PNG of the standing idle skeleton used for scale (default idle_skeleton.json)")
@@ -343,11 +381,19 @@ def main():
     ap.add_argument("--fixed-ground", action="store_true", help="keep ground line of the idle (jump arcs survive)")
     ap.add_argument("--fixed-x", action="store_true")
     ap.add_argument("--no-match", action="store_true")
+    ap.add_argument("--reuse-raw", action="store_true", help="reuse <out>/raw/NN.png if present (re-run matting/post only)")
     ap.add_argument("--prompt", default=PROMPT)
+    ap.add_argument("--_embeds", default=None, help=argparse.SUPPRESS)
     a = ap.parse_args()
+    if a._embeds:
+        return make_embeds(a.ref, a.prompt, a._embeds, a.mode == "ip")
 
     files = sorted(glob.glob(os.path.join(a.poses, "*.png")) + glob.glob(os.path.join(a.poses, "*.json")))
-    files = [f for f in files if Path(f).stem[:2].isdigit() or True]
+    by = {}
+    for f in files:                      # NN.json wins over NN.png when both exist (exact keypoints)
+        if Path(f).stem not in by or f.endswith(".json"):
+            by[Path(f).stem] = f
+    files = [by[k] for k in sorted(by)]
     out = Path(a.out); (out / "raw").mkdir(parents=True, exist_ok=True)
     if a.ref_skeleton:
         rk = load_pose(a.ref_skeleton)[1]
@@ -355,28 +401,38 @@ def main():
         rk = [tuple(k) if k else None for k in load_ref_skeleton()]
     rm = skel_metrics(rk)
 
-    gen = Generator(a.ref, prompt=a.prompt, ip_scale=a.ip_scale, cn_scale=a.cn_scale, mode=a.mode)
-    print(f"load {gen.load_s:.0f}s", flush=True)
-    ref_img = Image.open(a.ref).convert("RGBA")
-    ref_rgb = np.array(ref_img.convert("RGB")); ref_alpha = np.array(ref_img.getchannel("A"))
-    frames = []
+    need = [f for f in files if not (a.reuse_raw and (out / "raw" / f"{Path(f).stem}.png").exists())]
+    gen = Generator(a.ref, prompt=a.prompt, ip_scale=a.ip_scale, cn_scale=a.cn_scale, mode=a.mode, cache_dir=out) if need else None
+    if gen: print(f"load {gen.load_s:.0f}s", flush=True)
+    # phase A: generate every frame (only SDXL in memory), phase B: free it, then matte / place / post
+    items = []
     for f in files:
         name = Path(f).stem
         skel, kps = load_pose(f)
         t0 = time.time()
-        img = gen(skel, a.seed, a.steps)
-        tg = time.time() - t0
-        img.save(out / "raw" / f"{name}.png")
+        rp = out / "raw" / f"{name}.png"
+        if gen is None or (a.reuse_raw and rp.exists()):
+            img = Image.open(rp).convert("RGB")
+        else:
+            img = gen(skel, a.seed + (int(name) * 101 if a.seed_per_frame and name.isdigit() else 0), a.steps)
+            img.save(rp)
+        items.append((name, kps, img))
+        print(f"{name}: gen {time.time() - t0:.1f}s", flush=True)
+    if gen: gen.close(); del gen
+    ref_img = Image.open(a.ref).convert("RGBA")
+    ref_rgb = np.array(ref_img.convert("RGB")); ref_alpha = np.array(ref_img.getchannel("A"))
+    frames = []
+    for name, kps, img in items:
+        t0 = time.time()
         al = matte(img, kps, a.matte)
         rgb = np.array(img.convert("RGB"))
         if not a.no_match:
             rgb = color_match(rgb, al, ref_rgb, ref_alpha)
         rgba = Image.fromarray(np.dstack([rgb, al]), "RGBA")
-        full = place(rgba, kps, rm, a.fixed_ground, a.fixed_x)
-        full = outline(full)
+        full = outline(place(rgba, kps, rm, a.fixed_ground, a.fixed_x))
         full.save(out / f"{name}.png")
         frames.append(full)
-        print(f"{name}: gen {tg:.1f}s total {time.time() - t0:.1f}s", flush=True)
+        print(f"{name}: post {time.time() - t0:.1f}s", flush=True)
     sheets(frames, out)
     print("done", out)
 

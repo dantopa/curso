@@ -35,7 +35,7 @@ if __name__ == "__main__":
     t[10] = [t[10][0] - 25, t[10][1]]; t[9] = [t[9][0] - 15, t[9][1]]; t[13] = [t[13][0] + 30, t[13][1]]; t[12] = [t[12][0] + 18, t[12][1]]
     P["01_thrust"] = t
     o = copy.deepcopy(idle)           # overhead slash: sabre arm raised above head
-    sh = o[5]; o[6] = [sh[0] + 45, sh[1] - 75]; o[7] = [sh[0] + 75, sh[1] - 165]
+    sh = o[5]; o[6] = [sh[0] + 45, sh[1] - 55]; o[7] = [sh[0] + 75, sh[1] - 120]
     P["02_overhead"] = o
     for k, v in P.items():
         json.dump({"keypoints": v}, open(out / f"{k}.json", "w"))
