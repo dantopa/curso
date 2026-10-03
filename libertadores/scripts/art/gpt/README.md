@@ -9,3 +9,9 @@
    `public/assets/fighters/<id>/anims.json` + `anims/<clip>/NN.webp` and a matching static `idle.png`.
 Then `npm run art:manifest`.
 Run from a working dir containing `sheet.png` (copy from `source/`).
+
+## Green-screen strips (preferred, higher quality)
+One PNG per animation in `source/<char>_strips/<clip>.png` (one horizontal row of frames on #00FF00, facing right).
+`python strips.py <char_id> source/<char>_strips` keys the green (with despill), splits the row into the frame count
+requested in the prompt (`COUNTS`), gives detached blade tips / cape edges back to their own frame, scales everything
+from the idle height, anchors on the feet and writes the anims pack. Then `npm run art:manifest`.
