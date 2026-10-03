@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0806" />
+  <title>LIBERTADORES: BLOOD OF INDEPENDENCE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Oswald:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    html, body { margin: 0; height: 100%; background: #050403; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+    #game { position: fixed; inset: 0; }
+    #touch { position: fixed; inset: 0; pointer-events: none; display: none; z-index: 10; font-family: Oswald, sans-serif; }
+    #touch.on { display: block; }
+    #touch .btn { position: absolute; pointer-events: auto; border-radius: 50%; border: 2px solid rgba(240,200,120,.55); background: rgba(20,14,8,.45); color: #f3d9a0; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px; backdrop-filter: blur(2px); touch-action: none; }
+    #touch .btn.down { background: rgba(240,180,60,.5); }
+    #touch .dpad { width: 62px; height: 62px; border-radius: 14px; }
+  </style>
+</head>
+<body>
+  <div id="game"></div>
+  <div id="touch"></div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
